@@ -1,0 +1,77 @@
+/* Fuel Master shares Power Master's compact, section-first visual language. */
+.fuel-master-page { padding: 12px; background: #cfd8dc; color: #212121; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
+.fuel-master-page .app { width: min(100%, 1180px); margin: auto; padding: 20px; border-radius: 10px; background: #fff; box-shadow: 0 5px 16px rgba(0,0,0,.1); }
+.fuel-master-page .app-header { padding: 0 0 9px; border-bottom: 3px solid #e8eaf6; color: #212121; background: none; }
+.fuel-master-page .app-header h1 { color: var(--primary); font-size: 24px; }
+.fuel-master-page .app-header p { color: #546e7a; font-size: 12px; }
+.fuel-master-page .toolbar { max-width: none; margin: 12px 0; padding: 9px; border: 1px solid #e0e0e0; border-radius: 7px; background: #f5f5f5; }
+.fuel-master-page .layout { grid-template-columns: minmax(0, 1fr); max-width: none; margin: 0; padding: 0; gap: 0; }
+.fuel-master-page .stack { gap: 0; }
+.fuel-master-page .card { margin: 0 0 13px; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+.fuel-master-page .section-title { min-height: 32px; margin: 11px 0 7px; padding-left: 7px; border-left: 4px solid var(--accent); }
+.fuel-master-page .section-title { justify-content: flex-start; }
+.fuel-master-page .section-heading { align-items: baseline; gap: 9px; }
+.fuel-master-page .section-title h2,
+.fuel-master-page .section-title span { color: #546e7a; font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.fuel-master-page .section-title h2 { margin: 0; }
+.fuel-master-page .summary-units { display: flex; align-items: center; gap: 5px; margin-left: auto; color: #546e7a; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.fuel-master-page .summary-units select { min-height: 28px; padding: 3px 22px 3px 6px; border: 1px solid #b0bec5; border-radius: 4px; color: #455a64; background: #fff; font-size: 11px; font-weight: 700; }
+.fuel-master-page .section-actions { margin-left: auto; padding-right: 2px; }
+.fuel-master-page .icon-button { width: 32px; min-height: 32px; border-radius: 6px; color: #607d8b; background: transparent; }
+.fuel-master-page .icon-button svg { width: 19px; height: 19px; }
+.fuel-master-page .icon-button:hover:not(:disabled) { color: var(--primary); background: #eceff1; }
+.fuel-master-page .icon-button.danger { color: #607d8b; background: transparent; }
+.fuel-master-page .icon-button.danger:hover:not(:disabled) { color: #c62828; }
+.fuel-master-page .field-grid { margin: 0; padding: 11px; gap: 9px; border: 1px solid #e0e0e0; border-radius: 7px; background: #f5f5f5; }
+.fuel-master-page .field > span { color: #455a64; font-size: 11px; }
+.fuel-master-page .field input,
+.fuel-master-page .field select { height: 36px; min-height: 36px; border-color: #b0bec5; border-radius: 5px; padding: 6px 8px; color: #212121; font-size: 13px; font-weight: 700; }
+.fuel-master-page select { appearance: none; padding-right: 25px !important; overflow: hidden; background-color: #fff; background-image: linear-gradient(45deg, transparent 50%, #607d8b 50%), linear-gradient(135deg, #607d8b 50%, transparent 50%); background-position: calc(100% - 11px) 50%, calc(100% - 7px) 50%; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; text-overflow: ellipsis; }
+.fuel-master-page .field input:disabled,
+.fuel-master-page .field select:disabled { color: #455a64; background: #eceff1; }
+.fuel-master-page .locked-note { margin-bottom: 10px; font-size: 12px; }
+.fuel-master-page .recipe-plan { padding: 11px; border: 1px solid #e0e0e0; border-radius: 7px; background: #f5f5f5; }
+.fuel-master-page .checklist-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 10px; padding: 9px; border: 1px solid #e0e0e0; border-radius: 7px; background: #f5f5f5; }
+.fuel-master-page .check-item { display: flex; align-items: center; gap: 6px; min-width: 0; color: #455a64; font-size: 12px; font-weight: 700; }
+.fuel-master-page .check-item input { accent-color: #006064; }
+.fuel-master-page .recipe-details { margin: 0 0 13px; border: 1px solid #e0e0e0; border-radius: 7px; background: #f5f5f5; }
+.fuel-master-page .recipe-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 10px 11px; color: #546e7a; font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; }
+.fuel-master-page .recipe-summary-title { min-width: 0; }
+.fuel-master-page .recipe-save-btn { min-height: 30px; padding: 5px 9px; color: #fff; background: #6a1b9a; font-size: 11px; }
+.fuel-master-page .recipe-export-content { padding: 0 11px 11px; }
+.fuel-master-page .equipment-card, .fuel-master-page .recipe-card { margin: 10px 0; padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fff; font-size: 12px; line-height: 1.4; }
+.fuel-master-page .equipment-card { background: #fffde7; border-color: #fff59d; }
+.fuel-master-page .equipment-card h3, .fuel-master-page .recipe-card h3 { margin: 0 0 7px; color: #5d4037; font-size: 13px; }
+.fuel-master-page .equipment-card ul, .fuel-master-page .recipe-card ul, .fuel-master-page .recipe-card ol { margin: 0; padding-left: 20px; }
+.fuel-master-page .target-badge { float: right; color: #b71c1c; background: #ffebee; padding: 3px 6px; border-radius: 4px; font-size: 10px; }
+.fuel-master-page .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.fuel-master-page .metric { display: block; padding: 8px 9px; border: 0; border-left: 3px solid #00acc1; border-radius: 4px; background: #e0f7fa; color: #455a64; font-size: 11px; }
+.fuel-master-page .metric strong { display: block; margin-top: 2px; color: #006064; font-size: 16px; }
+.fuel-master-page .floating-status { min-height: 0; margin: 0; font-size: 12px; }
+
+@media (max-width: 800px) {
+  .fuel-master-page { padding: 8px; }
+  .fuel-master-page .app { padding: 14px; border-radius: 8px; }
+  .fuel-master-page .field-grid--six,
+  .fuel-master-page .field-grid--three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .fuel-master-page { padding: 5px; }
+  .fuel-master-page .app { padding: 10px; }
+  .fuel-master-page .toolbar > button,
+  .fuel-master-page .toolbar .parameter-file-slot > button { min-width: 0; }
+  .fuel-master-page .field-grid { padding: 8px; gap: 7px; }
+  .fuel-master-page .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fuel-master-page .checklist-group { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 420px) {
+  .fuel-master-page .app { padding: 8px; }
+  .fuel-master-page .field-grid--six,
+  .fuel-master-page .field-grid--three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fuel-master-page .section-title h2,
+  .fuel-master-page .section-title span { font-size: 11px; letter-spacing: .6px; }
+  .fuel-master-page .recipe-details > summary { align-items: flex-start; flex-direction: column; }
+  .fuel-master-page .recipe-save-btn { align-self: flex-start; }
+}

@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Power Master</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./power-master.css">
+</head>
+<body class="power-master-page">
+  <div class="app">
+    <header class="app-header">
+      <h1>Power Master</h1>
+      <p>Build a duration-aware pacing profile and printable handlebar tape.</p>
+    </header>
+
+    <div class="section-label">Parameters</div>
+    <p id="status" class="status floating-status" role="status" aria-live="polite"></p>
+    <nav class="parameter-actions" aria-label="Parameters">
+      <div class="parameter-file-slot">
+        <button id="load-button" class="parameter-load" type="button">Load Parameters</button>
+        <div id="loaded-plan-control" class="loaded-file-control" hidden>
+          <input id="loaded-plan-name" type="text" readonly aria-label="Loaded parameter file" title="Click to replace the loaded parameter file">
+          <button id="remove-loaded-plan" class="icon-button danger" type="button" title="Remove loaded parameter file" aria-label="Remove loaded parameter file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
+        </div>
+        <input class="file-input" id="load-plan" type="file" accept="application/json,.json">
+      </div>
+      <button id="save-button" class="parameter-save" type="button">Save Parameters</button>
+      <button id="reset-button" class="danger" type="button">Reset All Parameters</button>
+    </nav>
+
+    <div id="planning-fields" class="planning-stack"></div>
+
+    <div class="workspace">
+      <main class="editor-stack">
+      <section class="card">
+        <header class="section-title"><div class="section-heading"><span>Step 5</span><h2>Power Targets</h2></div><div class="section-actions">
+          <button id="add-target" class="icon-button" type="button" title="Add Power Target" aria-label="Add Power Target"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button id="targets-undo" class="icon-button" type="button" title="Undo" aria-label="Undo"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M7.5 7H16a5 5 0 0 1 0 10h-4v-2h4a3 3 0 0 0 0-6H7.5l3 3L9 13.5 3.5 8 9 2.5 10.5 4l-3 3Z"/></svg></button>
+          <button id="targets-redo" class="icon-button" type="button" title="Redo" aria-label="Redo"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M16.5 7H8a5 5 0 0 0 0 10h4v-2H8a3 3 0 0 1 0-6h8.5l-3 3 1.5 1.5L20.5 8 15 2.5 13.5 4l3 3Z"/></svg></button>
+          <button id="targets-clear" class="icon-button danger" type="button" title="Reset Power Targets" aria-label="Reset Power Targets"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
+        </div></header>
+        <div class="profile-targets">
+          <label class="field"><span>Profile Targets</span><select id="profile-template">
+            <option value="sprinter">Sprinter (5–15 seconds)</option><option value="puncheur">Puncheur (4 minutes)</option>
+            <option value="breakaway">Breakaway Specialist (5 minutes)</option><option value="rouleur" selected>Rouleur (6 minutes)</option>
+            <option value="gc">GC Specialist (8 minutes)</option><option value="climber">Climber (20–40 minutes)</option>
+            <option value="time-trialist">Time Trialist (40–60+ minutes)</option>
+          </select></label>
+          <label class="field"><span>Apply Mode</span><select id="profile-mode"><option value="add">Add to Current Targets</option><option value="replace">Replace Current Targets</option></select></label>
+          <label class="field"><span>Total Duration</span><div style="display:grid;grid-template-columns:minmax(100px,1fr) 64px;gap:.4rem"><input id="profile-duration" type="number" min="0" step="1" value="180"><select id="profile-duration-unit"><option value="minutes">min</option><option value="hours">hr</option></select></div></label>
+          <button id="add-profile-targets" type="button">Add Profile Targets</button>
+        </div>
+        <div id="target-list" class="target-list"></div>
+      </section>
+      <section class="card appearance-card">
+        <header class="section-title"><div class="section-heading"><span>Tape Appearance</span></div><div class="section-actions">
+          <button id="tape-undo" class="icon-button" type="button" title="Undo Tape Appearance" aria-label="Undo Tape Appearance"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M7.5 7H16a5 5 0 0 1 0 10h-4v-2h4a3 3 0 0 0 0-6H7.5l3 3L9 13.5 3.5 8 9 2.5 10.5 4l-3 3Z"/></svg></button>
+          <button id="tape-redo" class="icon-button" type="button" title="Redo Tape Appearance" aria-label="Redo Tape Appearance"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M16.5 7H8a5 5 0 0 0 0 10h4v-2H8a3 3 0 0 1 0-6h8.5l-3 3 1.5 1.5L20.5 8 15 2.5 13.5 4l3 3Z"/></svg></button>
+          <button id="tape-reset" class="icon-button danger" type="button" title="Reset Tape Appearance" aria-label="Reset Tape Appearance"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
+        </div></header>
+        <div class="appearance-grid">
+          <label class="field"><span class="field-label">Units <span class="tooltip" tabindex="0" role="note" data-tooltip="Controls the displayed stem width and maximum tape length. Power and route values remain stored canonically.">?</span></span><select id="tape-units"><option value="imperial">Imperial</option><option value="metric">Metric</option></select></label>
+          <label class="field"><span id="stem-width-label">Stem Width (in)</span><div class="slider-row"><input id="stem-width" type="range"><output id="stem-width-value" class="slider-value"></output></div></label>
+          <label class="field"><span id="tape-length-label">Max Tape Length (in)</span><div class="slider-row"><input id="tape-length" type="range"><output id="tape-length-value" class="slider-value"></output></div></label>
+          <label class="field"><span>Base Font Size (pt)</span><div class="slider-row"><input id="base-font-size" type="range" min="3.5" max="9" step="0.25"><output id="base-font-size-value" class="slider-value"></output></div></label>
+        </div>
+      </section>
+      </main>
+
+      <aside class="preview-wrap">
+        <div class="preview-title">Tape Preview</div>
+        <div class="preview-controls"><input id="preview-zoom" type="range" min="100" max="250" step="10"><output id="preview-zoom-value">140%</output></div>
+        <div id="preview-viewport" class="preview-viewport"><div id="tape" class="tape"></div></div>
+        <button id="save-tape" class="secondary preview-save" type="button">Save Tape HTML</button>
+      </aside>
+      <section class="card summary-card">
+        <header class="section-title"><div class="section-heading"><h2>Plan Summary</h2></div><label class="summary-units">Units <select id="summary-units"><option value="imperial">Imperial</option><option value="metric">Metric</option></select></label></header>
+        <div id="plan-summary" class="summary-grid"></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="./planning-model.js"></script>
+  <script src="./app.js"></script>
+  <script src="./activity-parser.js"></script>
+  <script src="./planning-ui.js"></script>
+  <script>
+    const { createPlanStore, downloadFile, downloadJson, readJsonFile, setStatus, wholeWatts } = VeloApp;
+    const { calculateDemandFromTargetDuration, combinedDemand, createDefaultPlan, createDefaultPowerTargets, createProfilePowerTargets, durationWeightedAveragePower, estimatedWorkload, estimateMechanicalPower, normalizePlan, targetPower } = VeloPlanning;
+    const { renderPlanningUI } = VeloPlanningUI;
+    const { parseActivityFile } = VeloActivity;
+
+    const elements = {
+      planning: document.querySelector("#planning-fields"),
+      targets: document.querySelector("#target-list"),
+      summary: document.querySelector("#plan-summary"),
+      tape: document.querySelector("#tape"),
+      file: document.querySelector("#load-plan"),
+      loadButton: document.querySelector("#load-button"),
+      loadedControl: document.querySelector("#loaded-plan-control"),
+      loadedName: document.querySelector("#loaded-plan-name"),
+      tapeUnits: document.querySelector("#tape-units"),
+      summaryUnits: document.querySelector("#summary-units"),
+      status: document.querySelector("#status"),
+      stemWidth: document.querySelector("#stem-width"),
+      tapeLength: document.querySelector("#tape-length"),
+      baseFontSize: document.querySelector("#base-font-size"),
+      previewZoom: document.querySelector("#preview-zoom"),
+    };
+
+    const initial = createDefaultPlan();
+    initial.source.tool = "power-master";
+    initial.powerTargets = createDefaultPowerTargets(initial.athlete.thresholdPower);
+    const store = createPlanStore("velo-tools:power-master", initial);
+    const histories = Object.fromEntries(["athlete", "route", "resistance", "demand", "tape", "targets"].map((id) => [id, { undo: [], redo: [] }]));
+    const loadedBaselineKey = "velo-tools:power-master:loaded-baseline";
+    let loadedBaseline = readLoadedBaseline();
+
+    // A loaded file becomes the Reset baseline until its trash control removes the association.
+    function readLoadedBaseline() {
+      try {
+        const saved = localStorage.getItem(loadedBaselineKey);
+        return saved ? normalizePlan(JSON.parse(saved)) : null;
+      } catch {
+        localStorage.removeItem(loadedBaselineKey);
+        return null;
+      }
+    }
+
+    function setLoadedBaseline(plan) {
+      loadedBaseline = plan ? normalizePlan(structuredClone(plan)) : null;
+      if (loadedBaseline) localStorage.setItem(loadedBaselineKey, JSON.stringify(loadedBaseline));
+      else localStorage.removeItem(loadedBaselineKey);
+    }
+
+    function clearHistories() {
+      Object.values(histories).forEach((history) => { history.undo.length = 0; history.redo.length = 0; });
+    }
+
+    function remember(section, snapshot = store.get()) {
+      histories[section].undo.push(snapshot);
+      histories[section].redo.length = 0;
+    }
+
+    function historyState() {
+      return Object.fromEntries(Object.entries(histories).map(([id, history]) => [id, { canUndo: history.undo.length > 0, canRedo: history.redo.length > 0 }]));
+    }
+
+    function runHistory(section, direction) {
+      const history = histories[section];
+      const source = history[direction];
+      if (!source.length) return;
+      (direction === "undo" ? history.redo : history.undo).push(store.get());
+      store.set(source.pop());
+    }
+
+    function resetSection(section) {
+      remember(section);
+      const plan = store.get();
+      plan[section] = structuredClone(createDefaultPlan()[section]);
+      commit(plan, `${section}.reset`);
+      setStatus(elements.status, `${section[0].toUpperCase() + section.slice(1)} reset.`);
+    }
+
+    function commit(plan, path = "") {
+      plan.source.tool = "power-master";
+      if (plan.demand.mode === "target-duration") calculateDemandFromTargetDuration(plan);
+      store.set(plan);
+    }
+
+    function render(plan) {
+      renderPlanningUI(elements.planning, plan, {
+        showUnits: true,
+        onChange(next, path) { remember(path === "units" ? "athlete" : path.split(".")[0], plan); commit(next, path); },
+        async onActivityFile(file) {
+          try {
+            const route = await parseActivityFile(file);
+            remember("route");
+            const next = store.get();
+            next.route = { ...next.route, ...route };
+            commit(next, "route.activity");
+            setStatus(elements.status, `Loaded ${file.name}.`);
+          } catch (error) { setStatus(elements.status, error.message, "error"); }
+        },
+        onClearActivity() {
+          remember("route");
+          const next = store.get();
+          next.route.activityFileName = null;
+          commit(next, "route.activityFileName");
+          setStatus(elements.status, "Activity route removed; route values are now editable.");
+        },
+        sectionActions: {
+          state: historyState(),
+          undo: (section) => runHistory(section, "undo"),
+          redo: (section) => runHistory(section, "redo"),
+          reset: resetSection,
+        },
+      });
+      renderTargets(plan);
+      renderSummary(plan);
+      renderTapeAppearance(plan);
+      renderTape(plan);
+      renderLoadedFile(plan);
+      elements.tapeUnits.value = plan.units;
+      document.querySelector("#targets-undo").disabled = !histories.targets.undo.length;
+      document.querySelector("#targets-redo").disabled = !histories.targets.redo.length;
+      document.querySelector("#tape-undo").disabled = !histories.tape.undo.length;
+      document.querySelector("#tape-redo").disabled = !histories.tape.redo.length;
+    }
+
+    function renderLoadedFile(plan) {
+      const hasLoadedFile = Boolean(loadedBaseline && plan.source.fileName);
+      elements.loadButton.hidden = hasLoadedFile;
+      elements.loadedControl.hidden = !hasLoadedFile;
+      elements.loadedName.value = hasLoadedFile ? plan.source.fileName : "";
+    }
+
+    function renderTargets(plan) {
+      elements.targets.innerHTML = plan.powerTargets.length ? `<div class="target-table"><div class="target-head"><span></span><span>Label</span><span>Terrain</span><span>Min W</span><span>Target W</span><span>Max W</span><span>Cadence</span><span>Duration</span><span>Text</span><span>BG</span><span></span></div>${plan.powerTargets.map((row, index) => `
+        <div class="target-row" data-index="${index}" data-target-id="${escapeHtml(row.id)}">
+          <span class="drag-handle" draggable="true" title="Drag to reorder" aria-label="Drag ${escapeHtml(row.label)} to reorder">⋮⋮</span>
+          <span class="mobile-order-controls" aria-label="Reorder ${escapeHtml(row.label)}">
+            <button type="button" data-move-index="${index}" data-move-direction="-1" aria-label="Move ${escapeHtml(row.label)} up" ${index === 0 ? "disabled" : ""}>↑</button>
+            <button type="button" data-move-index="${index}" data-move-direction="1" aria-label="Move ${escapeHtml(row.label)} down" ${index === plan.powerTargets.length - 1 ? "disabled" : ""}>↓</button>
+          </span>
+          ${targetLabelField(row)}
+          ${terrainField(row.terrain)}
+          ${field("Min W", "minPower", row.minPower, "number")}
+          ${field("Target W", "targetPower", row.targetPower, "number")}
+          ${field("Max W", "maxPower", row.maxPower, "number")}
+          ${field("Cadence", "cadence", row.cadence, "text")}
+          ${durationField(row)}
+          ${field("Text", "textColor", row.textColor, "color")}
+          ${field("BG", "backgroundColor", row.backgroundColor, "color")}
+          <button class="remove-target danger" type="button" data-remove="${index}" aria-label="Remove ${escapeHtml(row.label)}">×</button>
+        </div>`).join("")}</div>` : `<p class="status">Add targets for flat roads, climbs, descents, wind, pulls, or recovery.</p>`;
+
+      elements.targets.querySelectorAll("[data-key]").forEach((input) => input.addEventListener("change", (event) => {
+        remember("targets");
+        const plan = store.get();
+        const row = plan.powerTargets[Number(event.target.closest("[data-index]").dataset.index)];
+        const key = event.target.dataset.key;
+        if (["label", "terrain", "cadence", "textColor", "backgroundColor"].includes(key)) row[key] = event.target.value;
+        else if (key.includes("Power")) row[key] = wholeWatts(event.target.value);
+        else if (key === "durationValue") {
+          row.durationValue = normalizeDurationValue(event.target.value, row.durationUnit);
+          row.durationMinutes = round(durationToMinutes(row.durationValue, row.durationUnit), 1);
+        } else if (key === "durationUnit") {
+          row.durationUnit = event.target.value;
+          row.durationValue = normalizeDurationValue(minutesToDuration(row.durationMinutes, row.durationUnit), row.durationUnit);
+        }
+        commit(plan, "powerTargets");
+      }));
+      elements.targets.querySelectorAll("[data-remove]").forEach((button) => button.addEventListener("click", () => {
+        remember("targets");
+        const plan = store.get();
+        plan.powerTargets.splice(Number(button.dataset.remove), 1);
+        commit(plan, "powerTargets");
+      }));
+      elements.targets.querySelectorAll("[data-move-index]").forEach((button) => button.addEventListener("click", () => {
+        const index = Number(button.dataset.moveIndex);
+        const destination = index + Number(button.dataset.moveDirection);
+        const plan = store.get();
+        if (destination < 0 || destination >= plan.powerTargets.length) return;
+        remember("targets");
+        const [row] = plan.powerTargets.splice(index, 1);
+        plan.powerTargets.splice(destination, 0, row);
+        commit(plan, "powerTargets");
+      }));
+      bindTargetDragging();
+    }
+
+    function field(label, key, value, type) {
+      const className = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+      return `<label class="field target-field--${className}"><span>${label}</span><input type="${type}" ${type === "number" ? "min=\"0\" step=\"1\"" : ""} value="${value}" data-key="${key}"></label>`;
+    }
+
+    function targetLabelField(row) {
+      return `<label class="field target-field--label"><span>Label</span><input type="text" value="${escapeHtml(row.label)}" data-key="label">${row.sourceProfile ? `<small class="target-source">${escapeHtml(row.sourceProfile)}</small>` : ""}</label>`;
+    }
+
+    function terrainField(value) {
+      return `<label class="field target-field--terrain"><span>Terrain</span><select data-key="terrain">${["flat", "incline", "climb", "decline", "steep-ramp"].map((terrain) => `<option value="${terrain}" ${terrain === value ? "selected" : ""}>${terrain}</option>`).join("")}</select></label>`;
+    }
+
+    function durationField(row) {
+      const unit = row.durationUnit || "minutes";
+      const step = unit === "seconds" ? 1 : unit === "hours" ? 0.01 : 0.1;
+      return `<label class="field target-field--duration"><span>Duration</span><div class="duration-control"><input type="number" min="0" step="${step}" value="${normalizeDurationValue(row.durationValue ?? row.durationMinutes, unit)}" data-key="durationValue"><select data-key="durationUnit"><option value="seconds" ${unit === "seconds" ? "selected" : ""}>sec</option><option value="minutes" ${unit === "minutes" ? "selected" : ""}>min</option><option value="hours" ${unit === "hours" ? "selected" : ""}>hr</option></select></div></label>`;
+    }
+
+    function durationToMinutes(value, unit) { return unit === "seconds" ? value / 60 : unit === "hours" ? value * 60 : value; }
+    function minutesToDuration(minutes, unit) { return unit === "seconds" ? minutes * 60 : unit === "hours" ? minutes / 60 : minutes; }
+    function normalizeDurationValue(value, unit) { return round(Math.max(0, Number(value) || 0), unit === "seconds" ? 0 : unit === "hours" ? 2 : 1); }
+    function round(value, places = 1) { const factor = 10 ** places; return Math.round((Number(value) || 0) * factor) / factor; }
+    function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]); }
+
+    function bindTargetDragging() {
+      let startPlan = null;
+      elements.targets.querySelectorAll(".drag-handle").forEach((handle) => {
+        handle.addEventListener("dragstart", (event) => {
+          startPlan = store.get();
+          const row = event.target.closest(".target-row");
+          row.classList.add("dragging");
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", row.dataset.targetId);
+        });
+        handle.addEventListener("dragend", () => {
+          const rows = [...elements.targets.querySelectorAll(".target-row")];
+          const ids = rows.map((row) => row.dataset.targetId);
+          const plan = store.get();
+          const byId = new Map(plan.powerTargets.map((row) => [row.id, row]));
+          const reordered = ids.map((id) => byId.get(id)).filter(Boolean);
+          const changed = reordered.some((row, index) => row.id !== plan.powerTargets[index]?.id);
+          if (changed) {
+            remember("targets", startPlan);
+            plan.powerTargets = reordered;
+            commit(plan, "powerTargets");
+          } else render(plan);
+          startPlan = null;
+        });
+      });
+      elements.targets.querySelectorAll(".target-row").forEach((row) => row.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        const dragging = elements.targets.querySelector(".target-row.dragging");
+        if (!dragging || dragging === row) return;
+        const after = event.clientY > row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+        row.parentElement.insertBefore(dragging, after ? row.nextSibling : row);
+      }));
+    }
+
+    function renderSummary(plan) {
+      elements.summaryUnits.value = plan.units;
+      const weighted = durationWeightedAveragePower(plan);
+      const mechanical = estimateMechanicalPower(plan);
+      const displayedPower = weighted || mechanical;
+      const estimatedIf = plan.athlete.thresholdPower > 0 ? displayedPower / plan.athlete.thresholdPower : 0;
+      const speedKmh = plan.route.movingDurationMinutes > 0 ? plan.route.distanceKm / (plan.route.movingDurationMinutes / 60) : 0;
+      const speed = plan.units === "imperial" ? speedKmh * 0.6213711922 : speedKmh;
+      elements.summary.innerHTML = [
+        ["Moving duration", `${plan.route.movingDurationMinutes.toFixed(1)} min`],
+        ["Average speed", speed > 0 ? `${speed.toFixed(1)} ${plan.units === "imperial" ? "mph" : "km/h"}` : "Add route distance"],
+        [weighted ? "Duration-weighted power" : "Estimated average power", displayedPower ? `${Math.round(displayedPower)} W` : "Add route distance"],
+        ["Estimated IF", estimatedIf > 0 ? estimatedIf.toFixed(2) : "—"],
+        ["Estimated workload", (plan.powerTargets.length ? estimatedWorkload(plan) : combinedDemand(plan)).toFixed(1)],
+        ["Combined demand", combinedDemand(plan).toFixed(1)],
+      ].map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join("");
+    }
+
+    function renderTapeAppearance(plan) {
+      const imperial = plan.units === "imperial";
+      elements.stemWidth.min = imperial ? "0.6" : "15";
+      elements.stemWidth.max = imperial ? "2.4" : "60";
+      elements.stemWidth.step = imperial ? "0.01" : "0.1";
+      elements.stemWidth.value = imperial ? (plan.tape.stemWidthMm / 25.4).toFixed(2) : plan.tape.stemWidthMm.toFixed(1);
+      elements.tapeLength.min = "0";
+      elements.tapeLength.max = imperial ? "8" : "200";
+      elements.tapeLength.step = imperial ? "0.05" : "1";
+      elements.tapeLength.value = plan.tape.maxLengthMm ? (imperial ? plan.tape.maxLengthMm / 25.4 : plan.tape.maxLengthMm) : 0;
+      elements.baseFontSize.value = plan.tape.baseFontSizePt;
+      elements.previewZoom.value = plan.tape.previewZoom;
+      elements.summaryUnits.value = plan.units;
+      document.querySelector("#stem-width-label").textContent = `Stem Width (${imperial ? "in" : "mm"})`;
+      document.querySelector("#tape-length-label").textContent = `Max Tape Length (${imperial ? "in" : "mm"})`;
+      document.querySelector("#stem-width-value").textContent = `${elements.stemWidth.value} ${imperial ? "in" : "mm"}`;
+      document.querySelector("#tape-length-value").textContent = plan.tape.maxLengthMm ? `${round(Number(elements.tapeLength.value), imperial ? 2 : 0)} ${imperial ? "in" : "mm"}` : "Auto";
+      document.querySelector("#base-font-size-value").textContent = `${plan.tape.baseFontSizePt} pt`;
+      document.querySelector("#preview-zoom-value").textContent = `${plan.tape.previewZoom}%`;
+    }
+
+    function renderTape(plan) {
+      const average = Math.round(durationWeightedAveragePower(plan));
+      elements.tape.style.width = `${plan.tape.stemWidthMm}mm`;
+      elements.tape.style.fontSize = `${plan.tape.baseFontSizePt}pt`;
+      elements.tape.style.zoom = String(plan.tape.previewZoom / 100);
+      elements.tape.innerHTML = `<div style="padding:2px 1px;font-weight:900">AVG ${average}W</div><table><tbody>${plan.powerTargets.map((row) => `<tr style="color:${row.textColor};background:${row.backgroundColor}"><td style="width:43%;padding:1px 0 1px 2px;border-left:2px solid ${row.textColor};font-weight:800">${escapeHtml(row.label)}</td><td style="width:36%;padding:1px 0;font-weight:800">${powerText(row)}</td><td style="width:21%;padding:1px 2px 1px 0;font-size:.9em">${escapeHtml(row.cadence)}</td></tr>`).join("")}</tbody></table>`;
+      requestAnimationFrame(() => fitTape(plan));
+    }
+
+    function powerText(row) {
+      if (row.minPower > 0 && row.maxPower > 0) return `${row.minPower}-${row.maxPower}`;
+      if (row.targetPower > 0) return `${row.targetPower}`;
+      if (row.minPower > 0) return `${row.minPower}+`;
+      return row.maxPower > 0 ? `≤${row.maxPower}` : "—";
+    }
+
+    function fitTape(plan) {
+      elements.tape.style.maxHeight = "";
+      if (!plan.tape.maxLengthMm) return;
+      const maxPixels = plan.tape.maxLengthMm * 96 / 25.4;
+      const zoom = plan.tape.previewZoom / 100;
+      const naturalPixels = elements.tape.scrollHeight / zoom;
+      const scale = Math.min(1.35, Math.max(.62, maxPixels / Math.max(1, naturalPixels)));
+      elements.tape.style.fontSize = `${plan.tape.baseFontSizePt * scale}pt`;
+      elements.tape.style.maxHeight = `${plan.tape.maxLengthMm}mm`;
+    }
+
+    document.querySelector("#add-target").addEventListener("click", () => {
+      remember("targets");
+      const plan = store.get();
+      plan.powerTargets.push({ id: crypto.randomUUID(), label: "TARGET", terrain: "flat", minPower: 0, targetPower: plan.athlete.thresholdPower, maxPower: 0, cadence: "90", durationMinutes: 10, textColor: "#455a64", backgroundColor: "#ffffff" });
+      commit(plan, "powerTargets");
+    });
+    document.querySelector("#add-profile-targets").addEventListener("click", () => {
+      const plan = store.get();
+      const durationValue = Math.max(0, Number(document.querySelector("#profile-duration").value) || 0);
+      const totalMinutes = document.querySelector("#profile-duration-unit").value === "hours" ? durationValue * 60 : durationValue;
+      const profile = document.querySelector("#profile-template").value;
+      const created = createProfilePowerTargets(profile, plan.athlete.thresholdPower, totalMinutes);
+      if (!created.length) {
+        setStatus(elements.status, "Enter a valid threshold power and profile duration.", "error");
+        return;
+      }
+      remember("targets");
+      plan.powerTargets = document.querySelector("#profile-mode").value === "replace" ? created : [...plan.powerTargets, ...created];
+      commit(plan, "powerTargets");
+      setStatus(elements.status, `Added ${created.length} ${profile} profile targets across ${Math.round(totalMinutes)} minutes.`);
+    });
+    function readTapeControls(plan) {
+      const imperial = plan.units === "imperial";
+      plan.tape.stemWidthMm = Math.max(15, Number(elements.stemWidth.value) * (imperial ? 25.4 : 1));
+      const length = Math.max(0, Number(elements.tapeLength.value) || 0);
+      plan.tape.maxLengthMm = length > 0 ? length * (imperial ? 25.4 : 1) : null;
+      plan.tape.baseFontSizePt = Math.max(3.5, Number(elements.baseFontSize.value) || 5.25);
+      plan.tape.previewZoom = Math.min(250, Math.max(100, Number(elements.previewZoom.value) || 140));
+      return plan;
+    }
+    [elements.stemWidth, elements.tapeLength, elements.baseFontSize, elements.previewZoom].forEach((control) => {
+      control.addEventListener("input", () => {
+        const preview = readTapeControls(store.get());
+        renderTapeAppearance(preview);
+        renderTape(preview);
+      });
+      control.addEventListener("change", () => {
+        remember("tape");
+        commit(readTapeControls(store.get()), "tape");
+      });
+    });
+    elements.tapeUnits.addEventListener("change", () => {
+      remember("tape");
+      const plan = store.get();
+      plan.units = elements.tapeUnits.value;
+      commit(plan, "units");
+    });
+    elements.summaryUnits.addEventListener("change", () => {
+      remember("athlete");
+      const plan = store.get();
+      plan.units = elements.summaryUnits.value;
+      commit(plan, "units");
+    });
+    document.querySelector("#tape-undo").addEventListener("click", () => runHistory("tape", "undo"));
+    document.querySelector("#tape-redo").addEventListener("click", () => runHistory("tape", "redo"));
+    document.querySelector("#tape-reset").addEventListener("click", () => resetSection("tape"));
+    document.querySelector("#save-tape").addEventListener("click", () => {
+      const tape = elements.tape.cloneNode(true);
+      tape.style.zoom = "1";
+      const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Power Master Tape</title><style>body{margin:0;background:#fff}.tape{font-family:Arial,sans-serif;line-height:1;text-align:center;border:1px dashed #666;-webkit-print-color-adjust:exact;print-color-adjust:exact}.tape table{width:100%;border-collapse:collapse;table-layout:fixed;text-align:left}.tape td{line-height:1;white-space:nowrap}@media print{.tape{border:0}}</style></head><body>${tape.outerHTML}</body></html>`;
+      downloadFile("power-master-tape.html", html, "text/html");
+      setStatus(elements.status, "Tape HTML saved.");
+    });
+    document.querySelector("#targets-undo").addEventListener("click", () => runHistory("targets", "undo"));
+    document.querySelector("#targets-redo").addEventListener("click", () => runHistory("targets", "redo"));
+    document.querySelector("#targets-clear").addEventListener("click", () => {
+      remember("targets");
+      const plan = store.get();
+      plan.powerTargets = createDefaultPowerTargets(plan.athlete.thresholdPower);
+      commit(plan, "powerTargets");
+    });
+    elements.loadButton.addEventListener("click", () => elements.file.click());
+    elements.loadedName.addEventListener("click", () => elements.file.click());
+    elements.file.addEventListener("change", async () => {
+      try {
+        const file = elements.file.files[0];
+        const plan = await readJsonFile(file);
+        plan.source = { ...plan.source, tool: "power-master", fileName: file.name };
+        setLoadedBaseline(plan);
+        clearHistories();
+        store.set(plan);
+        setStatus(elements.status, `Loaded ${plan.source.fileName}.`);
+      } catch (error) { setStatus(elements.status, error.message, "error"); }
+      elements.file.value = "";
+    });
+    document.querySelector("#remove-loaded-plan").addEventListener("click", () => {
+      const plan = store.get();
+      setLoadedBaseline(null);
+      plan.source.fileName = null;
+      elements.file.value = "";
+      store.set(plan);
+      setStatus(elements.status, "Loaded parameter file removed; current values are retained.");
+    });
+    document.querySelector("#save-button").addEventListener("click", () => {
+      downloadJson("power-master-plan.json", store.get());
+      setStatus(elements.status, "Power Master parameters saved.");
+    });
+    document.querySelector("#reset-button").addEventListener("click", () => {
+      const resetToFile = Boolean(loadedBaseline);
+      if (!confirm(resetToFile ? "Restore the parameters from the loaded file?" : "Reset all Power Master parameters to defaults?")) return;
+      const plan = resetToFile ? structuredClone(loadedBaseline) : createDefaultPlan();
+      plan.source.tool = "power-master";
+      if (!resetToFile) {
+        plan.source.fileName = null;
+        plan.powerTargets = createDefaultPowerTargets(plan.athlete.thresholdPower);
+      }
+      clearHistories();
+      store.set(plan);
+      setStatus(elements.status, resetToFile ? `Restored ${plan.source.fileName}.` : "Power Master reset to defaults.");
+    });
+
+    store.subscribe(render);
+    if (!store.loadLocal()) render(initial);
+    else if (!store.get().powerTargets.length) {
+      const restored = store.get();
+      restored.powerTargets = createDefaultPowerTargets(restored.athlete.thresholdPower);
+      store.set(restored);
+    } else if (!loadedBaseline && store.get().source.fileName) {
+      // Preserve the association for files loaded by builds predating the stored reset baseline.
+      setLoadedBaseline(store.get());
+      render(store.get());
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,319 @@
+// Shared domain model for Fuel Master and Power Master.
+// This is a classic browser script (rather than an ES module) so the tools work over file://.
+(function (global) {
+"use strict";
+
+const PLAN_SCHEMA_VERSION = 1;
+
+const PROFILES = [
+  { id: "sprinter", label: "Sprinter", bestPower: "5–15 seconds", shares: [0.72, 0.12, 0.16] },
+  { id: "puncheur", label: "Puncheur", bestPower: "4 minutes", shares: [0.76, 0.19, 0.05] },
+  { id: "breakaway", label: "Breakaway Specialist", bestPower: "5 minutes", shares: [0.8, 0.17, 0.03] },
+  { id: "rouleur", label: "Rouleur", bestPower: "6 minutes", shares: [0.86, 0.12, 0.02] },
+  { id: "gc", label: "GC Specialist", bestPower: "8 minutes", shares: [0.82, 0.16, 0.02] },
+  { id: "climber", label: "Climber", bestPower: "20–40 minutes", shares: [0.8, 0.19, 0.01] },
+  { id: "time-trialist", label: "Time Trialist", bestPower: "40–60+ minutes", shares: [0.91, 0.08, 0.01] },
+];
+
+const RESISTANCE_PRESETS = {
+  aero: { label: "Fast / Aero", cda: 0.26, crr: 0.004 },
+  typical: { label: "Typical Road", cda: 0.32, crr: 0.005 },
+};
+
+// Power Master defaults and profile templates retain the established tape colors.
+const DEFAULT_POWER_TARGETS = [
+  { id: "crosswind", label: "CROSS", terrain: "flat", minPower: 153, targetPower: 156, maxPower: 158, cadence: "80-85", durationMinutes: 25, textColor: "#4a148c", backgroundColor: "#f3e5f5" },
+  { id: "headwind", label: "HEAD", terrain: "flat", minPower: 165, targetPower: 168, maxPower: 170, cadence: "90", durationMinutes: 25, textColor: "#c2185b", backgroundColor: "#fce4ec" },
+  { id: "tailwind", label: "TAIL", terrain: "flat", minPower: 163, targetPower: 166, maxPower: 168, cadence: "95+", durationMinutes: 25, textColor: "#1976d2", backgroundColor: "#e3f2fd" },
+  { id: "climb-4-percent", label: "4% CLM", terrain: "climb", minPower: 200, targetPower: 206, maxPower: 212, cadence: "80", durationMinutes: 30, textColor: "#e65100", backgroundColor: "#ffffff" },
+  { id: "incline-1-2-percent", label: "1-2% INC", terrain: "incline", minPower: 170, targetPower: 173, maxPower: 175, cadence: "90", durationMinutes: 35, textColor: "#2e7d32", backgroundColor: "#ffffff" },
+  { id: "decline-1-2-percent", label: "1-2% DEC", terrain: "decline", minPower: 0, targetPower: 135, maxPower: 0, cadence: "95+", durationMinutes: 30, textColor: "#616161", backgroundColor: "#ffffff" },
+  { id: "short-steep-ramp", label: "H EFFORT", terrain: "steep-ramp", minPower: 300, targetPower: 300, maxPower: 0, cadence: "100+", durationMinutes: 10, textColor: "#d32f2f", backgroundColor: "#ffffff" },
+];
+
+const PROFILE_TARGET_TEMPLATES = {
+  sprinter: [
+    ["END", "flat", .62, .70, .78, "88-94", 35, "#1b5e20", "#e8f5e9"],
+    ["LEAD", "flat", .90, 1, 1.10, "95+", 1.5, "#e65100", "#fff3e0"],
+    ["SPR", "steep-ramp", 1.60, 2, 2.40, "105+", .25, "#ffffff", "#c62828"],
+    ["REC", "decline", .35, .50, .62, "90+", 8, "#0d47a1", "#e3f2fd"],
+  ],
+  puncheur: [
+    ["CRZ", "flat", .68, .75, .82, "88-94", 30, "#1b5e20", "#e8f5e9"],
+    ["PUNCH", "steep-ramp", 1.20, 1.35, 1.50, "88+", 2, "#ffffff", "#ad1457"],
+    ["H INC", "incline", 1.02, 1.12, 1.22, "82-90", 6, "#4a148c", "#f3e5f5"],
+    ["REC", "decline", .40, .54, .66, "90+", 10, "#0d47a1", "#e3f2fd"],
+  ],
+  breakaway: [
+    ["BRDG", "flat", 1.02, 1.10, 1.18, "90+", 6, "#ffffff", "#6a1b9a"],
+    ["BRK", "flat", .88, .94, 1, "88-94", 35, "#e65100", "#fff3e0"],
+    ["ROLL", "incline", .96, 1.04, 1.12, "84-92", 10, "#4a148c", "#f3e5f5"],
+    ["REC", "decline", .42, .56, .68, "90+", 12, "#0d47a1", "#e3f2fd"],
+  ],
+  rouleur: [
+    ["END", "flat", .72, .76, .80, "88-94", 45, "#1b5e20", "#e8f5e9"],
+    ["TMP", "flat", .82, .86, .90, "88-94", 25, "#e65100", "#fff3e0"],
+    ["ROLL", "incline", .88, .94, 1, "82-90", 20, "#4a148c", "#f3e5f5"],
+    ["XWIND", "flat", .92, .98, 1.04, "82-90", 12, "#ffffff", "#1565c0"],
+    ["PULL", "steep-ramp", 1.08, 1.16, 1.24, "90+", 4, "#ffffff", "#c62828"],
+    ["REC", "decline", .45, .58, .68, "90+", 20, "#0d47a1", "#e3f2fd"],
+  ],
+  gc: [
+    ["END", "flat", .68, .74, .80, "88-94", 35, "#1b5e20", "#e8f5e9"],
+    ["T CLM", "climb", .88, .94, 1, "78-86", 30, "#4a148c", "#f3e5f5"],
+    ["THR CLM", "climb", .98, 1.03, 1.08, "76-84", 16, "#ffffff", "#6a1b9a"],
+    ["SURGE", "incline", 1.02, 1.10, 1.18, "84-92", 5, "#ffffff", "#c62828"],
+    ["REC", "decline", .42, .55, .65, "90+", 22, "#0d47a1", "#e3f2fd"],
+  ],
+  climber: [
+    ["APP", "flat", .64, .70, .76, "88-94", 30, "#1b5e20", "#e8f5e9"],
+    ["L CLM", "climb", .92, .98, 1.04, "76-84", 40, "#4a148c", "#f3e5f5"],
+    ["STEEP", "steep-ramp", 1.02, 1.10, 1.18, "70-80", 10, "#ffffff", "#c62828"],
+    ["DESC", "decline", .35, .50, .62, "90+", 25, "#0d47a1", "#e3f2fd"],
+  ],
+  "time-trialist": [
+    ["SET", "flat", .78, .82, .86, "88-94", 10, "#1b5e20", "#e8f5e9"],
+    ["RACE", "flat", .90, .95, 1, "88-96", 45, "#ffffff", "#6a1b9a"],
+    ["HWIND", "flat", .94, .99, 1.04, "84-92", 15, "#ffffff", "#1565c0"],
+    ["RISE", "incline", .96, 1.02, 1.08, "82-90", 8, "#4a148c", "#f3e5f5"],
+  ],
+};
+
+function createDefaultPowerTargets(thresholdPower = 214) {
+  const scale = thresholdPower > 0 ? thresholdPower / 214 : 1;
+  return DEFAULT_POWER_TARGETS.map((row) => normalizePowerTarget({
+    ...row,
+    minPower: Math.round(row.minPower * scale),
+    targetPower: Math.round(row.targetPower * scale),
+    maxPower: Math.round(row.maxPower * scale),
+  }));
+}
+
+function createProfilePowerTargets(profileId, thresholdPower, totalDurationMinutes = 180) {
+  const template = PROFILE_TARGET_TEMPLATES[profileId];
+  if (!template || !(thresholdPower > 0) || !(totalDurationMinutes > 0)) return [];
+  const templateMinutes = template.reduce((sum, row) => sum + row[6], 0);
+  let assignedMinutes = 0;
+  return template.map((row, index) => {
+    const durationMinutes = index === template.length - 1
+      ? Math.max(0, Math.round((totalDurationMinutes - assignedMinutes) * 10) / 10)
+      : Math.max(0, Math.round((row[6] * totalDurationMinutes / templateMinutes) * 10) / 10);
+    assignedMinutes += durationMinutes;
+    return normalizePowerTarget({
+    id: `profile-${profileId}-${Date.now()}-${index}`,
+    label: row[0], terrain: row[1], minPower: Math.round(thresholdPower * row[2]),
+    targetPower: Math.round(thresholdPower * row[3]), maxPower: Math.round(thresholdPower * row[4]),
+    cadence: row[5], durationMinutes, durationValue: durationMinutes, durationUnit: "minutes",
+    textColor: row[7], backgroundColor: row[8], source: "profile", sourceProfile: profileId,
+    });
+  });
+}
+
+function createDefaultPlan() {
+  return {
+    schemaVersion: PLAN_SCHEMA_VERSION,
+    source: { tool: null, fileName: null },
+    units: "imperial",
+    athlete: {
+      riderWeightKg: 68,
+      bikeWeightKg: 9,
+      carriedWeightKg: 0,
+      thresholdPower: 214,
+      lowThresholdPower: 160,
+      peakPower: 800,
+    },
+    route: {
+      activityFileName: null,
+      distanceKm: 0,
+      elevationGainM: 0,
+      movingDurationMinutes: 180,
+      stoppedDurationMinutes: 0,
+      climbingDurationMinutes: 0,
+      declineDurationMinutes: 0,
+    },
+    resistance: {
+      preset: "typical",
+      cda: RESISTANCE_PRESETS.typical.cda,
+      crr: RESISTANCE_PRESETS.typical.crr,
+    },
+    demand: {
+      mode: "target-duration",
+      aerobic: 0,
+      hardEffort: 0,
+      sprint: 0,
+      profile: "rouleur",
+      difficulty: "moderate",
+    },
+    tape: {
+      stemWidthMm: 25.4,
+      maxLengthMm: null,
+      baseFontSizePt: 5.25,
+      previewZoom: 140,
+    },
+    powerTargets: [],
+  };
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function finite(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function normalizePlan(input = {}) {
+  if (input.schemaVersion !== PLAN_SCHEMA_VERSION) {
+    throw new Error(`Unsupported plan schema. Expected version ${PLAN_SCHEMA_VERSION}.`);
+  }
+
+  const defaults = createDefaultPlan();
+  const plan = clone(defaults);
+  plan.source = { ...defaults.source, ...(input.source || {}) };
+  plan.units = input.units === "metric" ? "metric" : "imperial";
+  plan.athlete = { ...defaults.athlete, ...(input.athlete || {}) };
+  plan.route = { ...defaults.route, ...(input.route || {}) };
+  plan.resistance = { ...defaults.resistance, ...(input.resistance || {}) };
+  plan.demand = { ...defaults.demand, ...(input.demand || {}) };
+  plan.tape = { ...defaults.tape, ...(input.tape || {}) };
+  plan.powerTargets = Array.isArray(input.powerTargets)
+    ? input.powerTargets.map(normalizePowerTarget)
+    : [];
+
+  for (const key of Object.keys(plan.athlete)) plan.athlete[key] = finite(plan.athlete[key]);
+  for (const key of ["distanceKm", "elevationGainM", "movingDurationMinutes", "stoppedDurationMinutes", "climbingDurationMinutes", "declineDurationMinutes"]) {
+    plan.route[key] = Math.max(0, finite(plan.route[key]));
+  }
+  for (const key of ["movingDurationMinutes", "stoppedDurationMinutes", "climbingDurationMinutes", "declineDurationMinutes"]) {
+    plan.route[key] = Math.round(plan.route[key] * 10) / 10;
+  }
+  plan.resistance.cda = Math.max(0.1, finite(plan.resistance.cda, defaults.resistance.cda));
+  plan.resistance.crr = Math.max(0.001, finite(plan.resistance.crr, defaults.resistance.crr));
+  for (const key of ["aerobic", "hardEffort", "sprint"]) plan.demand[key] = Math.max(0, finite(plan.demand[key]));
+  plan.tape.stemWidthMm = Math.max(15, finite(plan.tape.stemWidthMm, defaults.tape.stemWidthMm));
+  plan.tape.maxLengthMm = finite(plan.tape.maxLengthMm) > 0 ? finite(plan.tape.maxLengthMm) : null;
+  plan.tape.baseFontSizePt = Math.max(3.5, finite(plan.tape.baseFontSizePt, defaults.tape.baseFontSizePt));
+  plan.tape.previewZoom = Math.min(250, Math.max(100, finite(plan.tape.previewZoom, defaults.tape.previewZoom)));
+  return plan;
+}
+
+function normalizePowerTarget(target = {}, index = 0) {
+  return {
+    id: String(target.id || `target-${index + 1}`),
+    label: String(target.label || "TARGET"),
+    terrain: String(target.terrain || "flat"),
+    minPower: Math.max(0, Math.round(finite(target.minPower))),
+    targetPower: Math.max(0, Math.round(finite(target.targetPower))),
+    maxPower: Math.max(0, Math.round(finite(target.maxPower))),
+    cadence: String(target.cadence || ""),
+    durationMinutes: Math.max(0, Math.round(finite(target.durationMinutes) * 10) / 10),
+    durationValue: Math.max(0, roundDurationValue(finite(target.durationValue, target.durationMinutes), target.durationUnit)),
+    durationUnit: ["seconds", "minutes", "hours"].includes(target.durationUnit) ? target.durationUnit : "minutes",
+    textColor: String(target.textColor || "#111827"),
+    backgroundColor: String(target.backgroundColor || "#ffffff"),
+    source: target.source ? String(target.source) : null,
+    sourceProfile: target.sourceProfile ? String(target.sourceProfile) : null,
+  };
+}
+
+function roundDurationValue(value, unit) {
+  const places = unit === "seconds" ? 0 : unit === "hours" ? 2 : 1;
+  const factor = 10 ** places;
+  return Math.round((Number(value) || 0) * factor) / factor;
+}
+
+function totalSystemMassKg(plan) {
+  return plan.athlete.riderWeightKg + plan.athlete.bikeWeightKg + plan.athlete.carriedWeightKg;
+}
+
+function elapsedDurationMinutes(plan) {
+  return plan.route.movingDurationMinutes + plan.route.stoppedDurationMinutes;
+}
+
+function targetPower(target) {
+  if (target.targetPower > 0) return target.targetPower;
+  if (target.minPower > 0 && target.maxPower > 0) return (target.minPower + target.maxPower) / 2;
+  return target.minPower || target.maxPower || 0;
+}
+
+function durationWeightedAveragePower(plan) {
+  const timed = plan.powerTargets.filter((row) => row.durationMinutes > 0 && targetPower(row) > 0);
+  const minutes = timed.reduce((sum, row) => sum + row.durationMinutes, 0);
+  if (!minutes) return 0;
+  return timed.reduce((sum, row) => sum + targetPower(row) * row.durationMinutes, 0) / minutes;
+}
+
+function estimatedWorkload(plan) {
+  const threshold = plan.athlete.thresholdPower;
+  if (threshold <= 0) return 0;
+  return plan.powerTargets.reduce((sum, row) => {
+    const hours = row.durationMinutes / 60;
+    return sum + hours * Math.pow(targetPower(row) / threshold, 2) * 100;
+  }, 0);
+}
+
+function combinedDemand(plan) {
+  return plan.demand.aerobic + plan.demand.hardEffort + plan.demand.sprint;
+}
+
+// A transparent route-physics estimate for Meet Target Duration mode. It deliberately
+// excludes wind, braking, drafting, and grade-by-grade speed, which require richer route data.
+function estimateMechanicalPower(plan) {
+  const seconds = plan.route.movingDurationMinutes * 60;
+  if (seconds <= 0 || plan.route.distanceKm <= 0) return 0;
+  const speed = plan.route.distanceKm * 1000 / seconds;
+  const mass = totalSystemMassKg(plan);
+  const gravity = 9.80665;
+  const airDensity = 1.225;
+  const rolling = plan.resistance.crr * mass * gravity * speed;
+  const aero = 0.5 * airDensity * plan.resistance.cda * Math.pow(speed, 3);
+  const climbing = mass * gravity * plan.route.elevationGainM / seconds;
+  return (rolling + aero + climbing) / 0.97;
+}
+
+function calculateDemandFromTargetDuration(plan) {
+  const averagePower = estimateMechanicalPower(plan);
+  const threshold = plan.athlete.thresholdPower;
+  if (averagePower <= 0 || threshold <= 0) return { averagePower: 0, workload: 0 };
+  const hours = plan.route.movingDurationMinutes / 60;
+  const workload = hours * Math.pow(averagePower / threshold, 2) * 100;
+  plan.demand.profile = deriveTargetDurationProfile(plan, averagePower);
+  const profile = PROFILES.find((item) => item.id === plan.demand.profile) || PROFILES[3];
+  const [aerobic, hardEffort, sprint] = profile.shares.map((share) => workload * share);
+  plan.demand.aerobic = aerobic;
+  plan.demand.hardEffort = hardEffort;
+  plan.demand.sprint = sprint;
+  plan.demand.difficulty = averagePower / threshold >= 0.85 ? "difficult" : "moderate";
+  return { averagePower, workload };
+}
+
+function deriveTargetDurationProfile(plan, averagePower) {
+  const distance = Math.max(0, plan.route.distanceKm);
+  const moving = Math.max(1, plan.route.movingDurationMinutes);
+  const elevationDensity = distance > 0 ? plan.route.elevationGainM / distance : 0;
+  const climbingShare = Math.min(1, Math.max(0, plan.route.climbingDurationMinutes / moving));
+  const intensity = plan.athlete.thresholdPower > 0 ? averagePower / plan.athlete.thresholdPower : 0;
+  if (elevationDensity >= 10 || climbingShare >= .25) return "climber";
+  if (elevationDensity >= 5 || climbingShare >= .22) return "gc";
+  if (elevationDensity < 2 && climbingShare < .08 && intensity >= .88) return "time-trialist";
+  return "rouleur";
+}
+
+const conversions = {
+  kgToLb: (kg) => kg * 2.2046226218,
+  lbToKg: (lb) => lb / 2.2046226218,
+  kmToMi: (km) => km * 0.6213711922,
+  miToKm: (mi) => mi / 0.6213711922,
+  mToFt: (m) => m * 3.280839895,
+  ftToM: (ft) => ft / 3.280839895,
+};
+
+global.VeloPlanning = {
+  PLAN_SCHEMA_VERSION, PROFILES, RESISTANCE_PRESETS, DEFAULT_POWER_TARGETS, PROFILE_TARGET_TEMPLATES,
+  createDefaultPlan, createDefaultPowerTargets, createProfilePowerTargets, clone,
+  normalizePlan, normalizePowerTarget, totalSystemMassKg, elapsedDurationMinutes,
+  targetPower, durationWeightedAveragePower, estimatedWorkload, combinedDemand,
+  estimateMechanicalPower, calculateDemandFromTargetDuration, deriveTargetDurationProfile, conversions,
+};
+})(globalThis);
