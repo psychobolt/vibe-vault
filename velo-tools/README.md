@@ -7,8 +7,6 @@ A small browser-based cycling planning project built around two related tools:
 
 The tools are designed to share the same athlete and ride-planning model while keeping their specialized interfaces separate.
 
-Live site: [psychobolt.github.io/vibe-vault](https://psychobolt.github.io/vibe-vault/)
-
 - [Power Master](https://psychobolt.github.io/vibe-vault/power-master.html)
 - [Fuel Master](https://psychobolt.github.io/vibe-vault/fuel-master.html)
 
