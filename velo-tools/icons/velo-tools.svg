@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Velo Tools</title>
+  <defs><linearGradient id="road" x1="7" y1="7" x2="57" y2="57" gradientUnits="userSpaceOnUse"><stop stop-color="#1a237e"/><stop offset="1" stop-color="#006064"/></linearGradient></defs>
+  <rect width="64" height="64" rx="15" fill="url(#road)"/>
+  <circle cx="18" cy="43" r="10" fill="none" stroke="#80deea" stroke-width="3.5"/>
+  <circle cx="47" cy="43" r="10" fill="none" stroke="#ffb300" stroke-width="3.5"/>
+  <path d="m18 43 10-19h9m-9 19h19L36 28m-12 0h9" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="36" cy="24" r="2.5" fill="#ffb300"/>
+</svg>

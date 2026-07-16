@@ -2,6 +2,8 @@
 (function (global) {
 "use strict";
 
+const { haversineDistanceMeters, roundTo } = global.VeloMath;
+
 async function parseActivityFile(file) {
   const extension = file.name.split(".").pop().toLowerCase();
   if (!new Set(["gpx", "tcx"]).has(extension)) throw new Error("Activity Route accepts GPX or TCX files only.");
@@ -38,7 +40,7 @@ function summarize(points, fileName) {
   for (let index = 1; index < points.length; index += 1) {
     const previous = points[index - 1], current = points[index];
     const seconds = (current.time - previous.time) / 1000;
-    const segmentM = haversine(previous, current);
+    const segmentM = haversineDistanceMeters(previous, current);
     if (seconds <= 0 || seconds > 300 || segmentM < 1) continue;
     const elevationChange = current.elevation - previous.elevation;
     const grade = elevationChange / segmentM * 100;
@@ -60,14 +62,7 @@ function summarize(points, fileName) {
   };
 }
 
-function roundMinutes(minutes) { return Math.round(minutes * 10) / 10; }
-
-function haversine(a, b) {
-  const radius = 6371000, radians = (degrees) => degrees * Math.PI / 180;
-  const dLat = radians(b.lat - a.lat), dLon = radians(b.lon - a.lon);
-  const value = Math.sin(dLat / 2) ** 2 + Math.cos(radians(a.lat)) * Math.cos(radians(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * radius * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
-}
+function roundMinutes(minutes) { return roundTo(minutes, 1); }
 
 global.VeloActivity = { parseActivityFile };
 })(globalThis);

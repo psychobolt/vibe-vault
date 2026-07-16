@@ -3,7 +3,7 @@
 .tool-page {
   padding: 12px;
   color: var(--color-text);
-  background: var(--color-page);
+  background: var(--color-canvas);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -25,6 +25,12 @@
 
 .tool-page .app-header h1 { color: var(--color-primary); font-size: 24px; }
 .tool-page .app-header p { color: var(--color-text-muted); font-size: 12px; }
+.tool-page .app-title { display: flex; align-items: center; gap: 9px; }
+.tool-page .tool-mark { display: inline-grid; flex: 0 0 34px; place-items: center; width: 34px; height: 34px; border-radius: 9px; color: #fff; }
+.tool-page .tool-mark svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.tool-page .tool-mark--power { background: linear-gradient(135deg, #f9a825, #ef6c00); }
+.tool-page .tool-mark--power svg { fill: currentColor; stroke: none; }
+.tool-page .tool-mark--fuel { background: linear-gradient(135deg, #00acc1, #006064); }
 
 .tool-page .section-label {
   margin: 14px 0 6px;
@@ -48,11 +54,10 @@
 .tool-page .floating-status { position: fixed; min-height: 0; margin: 0; color: #fff; font-size: 12px; }
 
 .tool-page .parameter-actions {
-  position: sticky;
-  top: 8px;
+  position: relative;
   z-index: 20;
   display: grid;
-  grid-template-columns: 86px 86px 86px;
+  grid-template-columns: 86px 86px 86px minmax(12px, 1fr) 32px;
   justify-content: start;
   align-items: center;
   gap: var(--space-3);
@@ -64,15 +69,34 @@
   transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
 }
 
+.tool-page .parameter-actions.is-section-pinned {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  z-index: 76;
+  width: min(calc(100vw - 112px), var(--content-max));
+  margin: 0;
+  border-color: var(--color-control-border);
+  background: var(--color-surface);
+  box-shadow: 0 8px 22px rgba(25, 39, 46, .28);
+  transform: translateX(-50%);
+}
+
+/* Pinning Parameters promotes it to a top application bar. Reserve its space
+   so the header and first form section move down rather than being obscured. */
+.tool-page:has(.parameter-actions.is-section-pinned) { padding-top: 76px; }
+.tool-page:has(.parameter-actions.is-section-pinned) > .app > .section-label { display: none; }
+.tool-page:has(.pinned-section-dock > .is-floating-minimized) { padding-bottom: 68px; }
+
 .tool-page .parameter-actions:has(.loaded-file-control:not([hidden])) {
-  grid-template-columns: minmax(220px, 300px) 86px 86px;
+  grid-template-columns: minmax(220px, 300px) 86px 86px minmax(12px, 1fr) 32px;
 }
 
 .tool-page .parameter-actions.is-sticky {
   border-color: #80cbc4;
   border-top: 3px solid var(--color-accent);
   background: rgba(255, 255, 255, .98);
-  box-shadow: var(--shadow-sticky);
+  box-shadow: 0 11px 28px rgba(25, 39, 46, .34);
 }
 
 .tool-page .parameter-actions > button,
@@ -87,9 +111,10 @@
 
 .tool-page .parameter-file-slot { grid-column: 1; min-width: 0; }
 .tool-page .parameter-file-slot > button { width: 86px; }
-.tool-page .parameter-file-slot:has(.loaded-file-control:not([hidden])) { width: min(300px, calc(100vw - 40px)); }
+.tool-page .parameter-file-slot:has(.loaded-file-control:not([hidden])) { width: 100%; min-width: 0; overflow: hidden; }
 .tool-page .parameter-save { grid-column: 2; }
 .tool-page .parameter-actions > .danger { grid-column: 3; }
+.tool-page .parameter-pin { grid-column: 5; justify-self: end; width: 32px; min-width: 32px !important; min-height: 32px !important; padding: 0 !important; color: var(--color-icon); background: transparent; }
 .tool-page .parameter-icon-button { display: grid; place-items: center; }
 
 .tool-page .parameter-icon-button svg {
@@ -122,7 +147,7 @@
 }
 
 .tool-page .loaded-file-control .icon-button { width: 34px; min-width: 34px; min-height: 34px; padding: 0; }
-.tool-page .planning-stack { display: grid; gap: 0; }
+.tool-page .planning-stack { display: contents; }
 .tool-page .card { margin: 0 0 13px; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
 
 .tool-page .section-title {
@@ -132,7 +157,244 @@
   border-left: 4px solid var(--color-accent);
 }
 
-.tool-page .section-heading { align-items: center; gap: 9px; }
+.tool-page details.collapsible-section > summary.section-title { list-style: none; cursor: pointer; }
+.tool-page details.collapsible-section > summary.section-title::-webkit-details-marker { display: none; }
+.tool-page details.collapsible-section > summary.section-title .section-heading::before {
+  content: "";
+  flex: 0 0 12px;
+  width: 12px;
+  height: 8px;
+  background: var(--color-icon);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transition: transform .15s ease;
+}
+.tool-page details.collapsible-section:not([open]) > summary.section-title .section-heading::before { transform: rotate(-90deg); }
+.tool-page details.collapsible-section:not([open]) > summary.section-title { margin-bottom: 11px; }
+.tool-page details.collapsible-section:not([open]) .section-actions > :not(.section-sticky-toggle):not(.section-fullscreen-toggle) { display: none; }
+.tool-page .section-link.is-copied { color: var(--color-primary); background: #e0f2f1; }
+.tool-page .section-sticky-toggle.is-active { color: var(--color-primary); background: #e0f2f1; }
+.tool-page .section-actions .section-fullscreen-toggle,
+.tool-page .target-actions .section-fullscreen-toggle {
+  margin-left: 7px;
+  box-shadow: -5px 0 0 -4px var(--color-control-border);
+}
+.tool-page .section-sticky-toggle svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tool-page details.collapsible-section.is-section-pinned,
+.tool-page section.is-section-pinned,
+.tool-page .recipe-details.is-section-pinned {
+  position: sticky;
+  top: 72px;
+  z-index: 12;
+  max-height: calc(100vh - 84px);
+  overflow: auto;
+  align-self: start;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: 0 10px 26px rgba(25, 39, 46, .30);
+}
+
+.pinned-section-dock {
+  position: fixed;
+  top: 72px;
+  right: 8px;
+  bottom: 8px;
+  left: 54px;
+  z-index: 48;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tool-page .pinned-section-dock > details.is-section-pinned,
+.tool-page .pinned-section-dock > section.is-section-pinned,
+.tool-page .pinned-section-dock > aside.is-section-pinned,
+.tool-page .pinned-section-dock > .target-row.is-section-pinned {
+  position: absolute !important;
+  min-width: 360px;
+  max-width: calc(100% - 16px);
+  max-height: calc(100% - 16px);
+  margin: 0;
+  padding: 9px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 2px solid #90a4ae;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .91);
+  box-shadow: 0 0 0 5px rgba(236, 239, 241, .72), 0 0 0 6px rgba(96, 125, 139, .58), 0 18px 44px rgba(18, 32, 40, .5);
+  backdrop-filter: blur(12px) saturate(115%);
+  pointer-events: auto;
+}
+
+.tool-page .pinned-section-dock .floating-card-drag-handle { width: 100%; cursor: move; touch-action: none; user-select: none; }
+.tool-page .pinned-section-dock .floating-card-drag-handle .section-heading { cursor: move; }
+.tool-page .pinned-section-dock details > summary.section-title.floating-card-drag-handle,
+.tool-page .pinned-section-dock section > .section-title.floating-card-drag-handle,
+.tool-page .pinned-section-dock aside > .section-title.floating-card-drag-handle { cursor: move; }
+.tool-page .pinned-section-dock .section-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.tool-page .pinned-section-dock .section-heading { min-width: 0; }
+.tool-page .pinned-section-dock .section-actions { min-width: 0; }
+.tool-page .pinned-section-dock .section-actions .icon-button { width: 26px; min-height: 26px; }
+.tool-page .pinned-section-dock input,
+.tool-page .pinned-section-dock select,
+.tool-page .pinned-section-dock .field,
+.tool-page .pinned-section-dock .number-slider-row { min-width: 0; max-width: 100%; }
+
+.tool-page .pinned-section-dock .field-grid,
+.tool-page .pinned-section-dock .appearance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.tool-page .pinned-section-dock details.collapsible-section > summary.section-title .section-heading::before { display: none; }
+
+.pinned-minimize-toggle { display: none !important; }
+.pinned-minimize-toggle.is-window-active { display: inline-grid !important; }
+.section-fullscreen-toggle.is-active,
+.pinned-minimize-toggle.is-active { color: var(--color-primary); background: #e0f2f1; }
+
+.pinned-taskbar { display: none; }
+.tool-page .pinned-section-dock > .is-floating-minimized {
+  display: block !important;
+  min-width: 0 !important;
+  max-width: none;
+  height: auto !important;
+  min-height: 0;
+  padding: 6px;
+  overflow: hidden;
+}
+.tool-page .pinned-section-dock > .is-floating-minimized > *:not(.pinned-taskbar) { display: none !important; }
+.tool-page .pinned-section-dock > .is-floating-minimized > .pinned-taskbar {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+  padding: 2px 4px 2px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.tool-page .pinned-section-dock > .is-floating-minimized > .pinned-taskbar:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -1px; }
+.pinned-taskbar strong { display: block; flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--color-text-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.pinned-taskbar > span { display: inline-flex; flex: 0 0 auto; gap: 2px; }
+.pinned-taskbar button { display: grid; place-items: center; width: 28px; min-width: 28px; min-height: 28px; padding: 0; border: 0; border-radius: 5px; color: var(--color-icon); background: transparent; }
+.pinned-taskbar button:hover { color: var(--color-primary); background: #e0f2f1; }
+.pinned-taskbar svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.tool-page .pinned-section-dock > details.is-section-pinned.is-section-fullscreen,
+.tool-page .pinned-section-dock > section.is-section-pinned.is-section-fullscreen,
+.tool-page .pinned-section-dock > aside.is-section-pinned.is-section-fullscreen,
+.tool-page .pinned-section-dock > .target-row.is-section-pinned.is-section-fullscreen {
+  position: fixed !important;
+  inset: 8px 8px 8px 54px !important;
+  z-index: 72;
+  width: auto !important;
+  height: calc(100vh - 16px) !important;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+}
+.tool-page:has(.parameter-actions.is-section-pinned) .pinned-section-dock > .is-section-fullscreen { top: 72px !important; height: calc(100vh - 80px) !important; }
+
+/* Fullscreen is temporary and does not alter the section's pinned state. */
+.tool-page details.is-section-fullscreen:not(.is-section-pinned),
+.tool-page section.is-section-fullscreen:not(.is-section-pinned),
+.tool-page aside.is-section-fullscreen:not(.is-section-pinned),
+.tool-page .target-row.is-section-fullscreen:not(.is-section-pinned) {
+  position: fixed !important;
+  inset: 8px 8px 8px 54px !important;
+  z-index: 72;
+  width: auto !important;
+  height: calc(100vh - 16px) !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 10px;
+  overflow: auto;
+  border: 2px solid var(--color-control-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  box-shadow: 0 18px 44px rgba(18, 32, 40, .5);
+}
+.tool-page:has(.parameter-actions.is-section-pinned) details.is-section-fullscreen:not(.is-section-pinned),
+.tool-page:has(.parameter-actions.is-section-pinned) section.is-section-fullscreen:not(.is-section-pinned),
+.tool-page:has(.parameter-actions.is-section-pinned) aside.is-section-fullscreen:not(.is-section-pinned),
+.tool-page:has(.parameter-actions.is-section-pinned) .target-row.is-section-fullscreen:not(.is-section-pinned) {
+  top: 72px !important;
+  height: calc(100vh - 80px) !important;
+}
+
+.pinned-resize-handle {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  z-index: 6;
+  display: none;
+  place-items: center;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px 0 6px 0;
+  color: #455a64;
+  background: rgba(236, 239, 241, .92);
+  cursor: ns-resize;
+  touch-action: none;
+}
+.pinned-resize-handle:hover { color: var(--color-primary); background: #e0f2f1; }
+.pinned-resize-handle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.tool-page .pinned-section-dock .section-title {
+  margin-top: 0;
+  padding-right: 2px;
+  background: rgba(245, 245, 245, .68);
+}
+
+.tool-sidebar {
+  position: fixed;
+  top: 96px;
+  left: 8px;
+  z-index: 60;
+  width: 42px;
+  overflow: hidden;
+  border: 1px solid #90a4ae;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: var(--shadow-sticky);
+  transition: width .18s ease;
+}
+.tool-sidebar.is-expanded { width: 176px; }
+.tool-sidebar-toggle { display: grid; place-items: center; width: 100%; min-height: 38px; padding: 0; border-radius: 0; color: #fff; background: var(--color-accent); }
+.tool-sidebar-toggle { cursor: move; }
+.tool-sidebar-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .18s ease; }
+.tool-sidebar.is-expanded .tool-sidebar-toggle svg { transform: rotate(180deg); }
+.tool-sidebar-links { display: grid; padding: 4px; gap: 3px; }
+.tool-sidebar-links a { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; min-height: 34px; overflow: hidden; border-radius: 5px; color: var(--color-text-muted); font-size: 11px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.tool-sidebar-links a:hover { color: var(--color-primary); background: var(--color-panel-muted); }
+.tool-sidebar-links a.is-current { color: #fff; background: var(--color-primary); }
+.tool-sidebar-links a svg { justify-self: center; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tool-sidebar-links a span { padding-right: 8px; }
+
+/* Debug profiles use an actual iframe viewport so media queries run at the
+   selected width instead of merely narrowing the inner content container. */
+.debug-profile-host { display: flex; justify-content: center; min-height: 100vh; overflow: hidden; background: #263238; }
+.debug-profile-frame { display: block; flex: 0 0 auto; height: 100vh; border: 0; background: var(--color-canvas); box-shadow: 0 0 0 1px rgba(255,255,255,.2), 0 12px 36px rgba(0,0,0,.45); }
+.debug-config-section { border-color: #b39ddb; background: #faf7ff; }
+.debug-config-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+.debug-config-toolbar button { min-height: 36px; }
+.debug-config-editor { margin-top: 10px; }
+.debug-config-editor textarea { width: 100%; min-height: 210px; padding: 10px; resize: vertical; border: 1px solid var(--color-control-border); border-radius: var(--radius-sm); color: #263238; background: #fff; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size: 2; }
+.debug-config-actions { display: flex; gap: 7px; margin-top: 8px; }
+.debug-config-actions button { min-height: 34px; padding: 6px 10px; font-size: 11px; }
+.debug-config-status { min-height: 18px; margin: 7px 0 0; }
+.tool-page [id^="section-"],
+.tool-page #recipe-section { scroll-margin-top: 76px; }
+
+.tool-page .section-heading { align-items: center; gap: 7px; }
+.tool-page .section-title { flex-wrap: wrap; }
+.tool-page .section-heading { flex: 1 1 150px; }
 .tool-page .section-title h2 { margin: 0; }
 
 .tool-page .section-title h2,
@@ -144,7 +406,18 @@
   text-transform: uppercase;
 }
 
-.tool-page .section-actions { margin-left: auto; padding-right: 2px; }
+.tool-page .section-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin-left: 0;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-panel-muted);
+}
+.tool-page .section-actions .icon-button { width: 28px; min-height: 28px; }
+.tool-page .section-actions .icon-button svg { width: 17px; height: 17px; }
 .tool-page .icon-button { width: var(--icon-control-size); min-height: var(--icon-control-size); border-radius: 6px; color: var(--color-icon); background: transparent; }
 .tool-page .icon-button svg { width: 19px; height: 19px; }
 .tool-page .icon-button:hover:not(:disabled) { color: var(--color-primary); background: var(--color-panel-muted); }
@@ -161,6 +434,16 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-panel);
+}
+.tool-page .athlete-layout { grid-template-columns: minmax(0, 1fr); }
+.tool-page .athlete-units-row,
+.tool-page .athlete-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; min-width: 0; }
+.tool-page .athlete-units-row > .field { grid-column: 1; }
+
+@media (max-width: 640px) {
+  .tool-page .athlete-units-row,
+  .tool-page .athlete-row { gap: 5px; }
+  .tool-page .athlete-row .number-slider-row { grid-template-columns: minmax(0, 1fr) 44px; gap: 3px; }
 }
 
 .tool-page .field-grid--six,
@@ -220,7 +503,16 @@
 
 .tool-page .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 7px; }
 .tool-page .metric { display: block; padding: 8px 9px; border: 0; border-left: 3px solid var(--color-summary-accent); border-radius: var(--radius-sm); background: var(--color-summary); color: #455a64; font-size: 11px; }
+.tool-page .metric > span { display: flex; align-items: center; gap: 3px; }
 .tool-page .metric strong { display: block; margin-top: 2px; color: var(--color-summary-text); font-size: 16px; }
+.tool-page .metric--aligned { border-left-color: #00897b; background: #e0f2f1; }
+.tool-page .metric--positive { border-left-color: #2e7d32; background: #e8f5e9; }
+.tool-page .metric--negative { border-left-color: #c62828; background: #ffebee; }
+.tool-page .metric-actions { display: grid; grid-template-columns: repeat(3, 30px); gap: 3px; justify-content: end; margin-top: 6px; }
+.tool-page .metric-action { display: grid; place-items: center; width: 30px; min-width: 30px; min-height: 26px; padding: 0; border-radius: 5px; color: #455a64; background: rgba(255, 255, 255, .78); font-size: 17px; font-weight: 850; }
+.tool-page .metric-action:hover { color: var(--color-primary); background: #fff; }
+.tool-page .metric-action--fit { color: #fff; background: var(--color-accent); }
+.tool-page .metric-action--fit:hover { color: #fff; background: var(--color-primary); }
 
 /* Small utility set for page composition; keep behavior out of tool markup. */
 .u-min-0 { min-width: 0; }
@@ -234,22 +526,13 @@
   .tool-page .app { padding: 14px; border-radius: 8px; }
 }
 
-@media (max-width: 640px) {
-  .tool-page { padding: 5px; }
-  .tool-page .app { padding: 10px; }
-  .tool-page .parameter-actions { grid-template-columns: 42px 42px 42px; align-items: center; }
-  .tool-page .parameter-actions.is-sticky { top: 4px; }
-  .tool-page .parameter-actions:has(.loaded-file-control:not([hidden])) { grid-template-columns: minmax(190px, 1fr) 42px 42px; }
-  .tool-page .parameter-actions .parameter-file-slot { grid-column: 1; width: auto; }
-  .tool-page .parameter-actions .parameter-file-slot > button,
-  .tool-page .parameter-actions > button { width: 42px; min-width: 42px; min-height: 34px; padding: 0; }
-  .tool-page .parameter-save { grid-column: 2; }
-  .tool-page .parameter-actions > .danger { grid-column: 3; }
-  .tool-page .field-grid,
-  .tool-page .appearance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 7px; }
-  .tool-page .field-grid--six,
-  .tool-page .field-grid--three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tool-page .field > .field-label { flex-wrap: wrap; overflow-wrap: anywhere; white-space: normal; }
+@media (max-width: 900px) {
+  .tool-page .field > .field-label {
+    max-width: 100%;
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
   .tool-page .tooltip::after {
     position: fixed;
     right: 12px;
@@ -260,8 +543,131 @@
     transform: none;
   }
   .tool-page .tooltip::before { display: none; }
+}
+
+@media (max-width: 640px) {
+  .tool-page { padding: 5px; }
+  .tool-page:has(.parameter-actions.is-section-pinned) { padding-top: 56px; }
+  .tool-page:has(.pinned-section-dock > .is-floating-minimized) { padding-bottom: 62px; }
+  .tool-page .app { padding: 10px; }
+  .tool-page .parameter-actions { grid-template-columns: 38px 38px 38px minmax(8px, 1fr) 32px; align-items: center; gap: 4px; padding: 6px; }
+  .tool-page .parameter-actions.is-sticky { top: 4px; }
+  .tool-page .parameter-actions.is-section-pinned {
+    top: 4px;
+    right: 6px;
+    left: 6px;
+    width: auto;
+    transform: none;
+  }
+  .tool-page .parameter-actions:has(.loaded-file-control:not([hidden])) { grid-template-columns: minmax(0, 1fr) 38px 38px minmax(8px, 1fr) 32px; }
+  .tool-page .parameter-actions .parameter-file-slot { grid-column: 1; width: auto; }
+  .tool-page .parameter-actions .parameter-file-slot:has(.loaded-file-control:not([hidden])) { width: 100%; min-width: 0; overflow: hidden; }
+  .tool-page .parameter-actions .parameter-file-slot > button,
+  .tool-page .parameter-actions > button { width: 38px; min-width: 38px; min-height: 34px; padding: 0; }
+  .tool-page .parameter-actions .loaded-file-control { grid-template-columns: minmax(0, 1fr) 32px; gap: 3px; }
+  .tool-page .parameter-actions .loaded-file-control .icon-button { width: 32px; min-width: 32px; }
+  .tool-page .parameter-save { grid-column: 2; }
+  .tool-page .parameter-actions > .danger { grid-column: 3; }
+  .tool-page .parameter-pin { grid-column: 5; width: 32px; min-width: 32px !important; }
+  .tool-page .section-heading { overflow: hidden; }
+  .tool-page .section-title h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tool-page .section-actions { padding: 1px; }
+  .tool-page .section-actions .section-fullscreen-toggle,
+  .tool-page .target-actions .section-fullscreen-toggle {
+    margin-left: 5px;
+    box-shadow: -3px 0 0 -2px var(--color-control-border);
+  }
+  .tool-page details.collapsible-section.is-section-pinned,
+  .tool-page section.is-section-pinned,
+  .tool-page .recipe-details.is-section-pinned { top: 58px; max-height: calc(100vh - 66px); }
+  .tool-sidebar { top: 18px !important; right: 6px; left: auto !important; width: auto !important; z-index: 90; }
+  .tool-page:has(.parameter-actions.is-section-pinned) .tool-sidebar { top: 62px !important; }
+  .tool-sidebar-toggle { display: none; }
+  .tool-sidebar-links { display: flex; padding: 3px; gap: 2px; }
+  .tool-sidebar-links a { grid-template-columns: 32px; width: 34px; min-height: 32px; }
+  .tool-sidebar-links a span { display: none; }
+  .debug-config-toolbar { grid-template-columns: 1fr; }
+  .debug-config-toolbar button { width: 100%; }
+  .debug-config-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .tool-page .field-grid,
+  .tool-page .appearance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 7px; }
+  .tool-page .field-grid.athlete-layout { grid-template-columns: minmax(0, 1fr); }
+  .tool-page .field-grid--six,
+  .tool-page .field-grid--three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tool-page .field > .field-label { flex-wrap: wrap; overflow-wrap: anywhere; white-space: normal; }
   .tool-page select { padding-right: 23px !important; }
   .tool-page .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tool-page .field .number-slider-row { grid-template-columns: minmax(0, 1fr) 54px; gap: 4px; }
+  .pinned-section-dock {
+    top: 58px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 9px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: transparent;
+    backdrop-filter: none;
+    pointer-events: none;
+  }
+  .tool-page:has(.parameter-actions.is-section-pinned) .pinned-section-dock { top: 98px; }
+  .tool-page .pinned-section-dock > details.is-section-pinned,
+  .tool-page .pinned-section-dock > section.is-section-pinned,
+  .tool-page .pinned-section-dock > aside.is-section-pinned,
+  .tool-page .pinned-section-dock > .target-row.is-section-pinned {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    flex: 0 0 auto;
+    width: 100% !important;
+    min-width: 0;
+    max-width: none;
+    height: auto !important;
+    min-height: 80px;
+    max-height: min(60vh, calc(100vh - 118px));
+    padding: 8px;
+  }
+  .tool-page .pinned-section-dock > .is-section-pinned.is-floating-minimized {
+    order: 999;
+    position: fixed !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: 6px !important;
+    left: var(--taskbar-left) !important;
+    width: var(--taskbar-width) !important;
+    max-height: none;
+    margin: 0;
+  }
+  .tool-page .pinned-section-dock > details.is-section-pinned.is-section-fullscreen,
+  .tool-page .pinned-section-dock > section.is-section-pinned.is-section-fullscreen,
+  .tool-page .pinned-section-dock > aside.is-section-pinned.is-section-fullscreen,
+  .tool-page .pinned-section-dock > .target-row.is-section-pinned.is-section-fullscreen {
+    position: fixed !important;
+    inset: 6px !important;
+    width: auto !important;
+    height: calc(100vh - 12px) !important;
+    max-height: none;
+  }
+  .tool-page:has(.parameter-actions.is-section-pinned) .pinned-section-dock > .is-section-fullscreen { top: 54px !important; height: calc(100vh - 60px) !important; }
+  .tool-page details.is-section-fullscreen:not(.is-section-pinned),
+  .tool-page section.is-section-fullscreen:not(.is-section-pinned),
+  .tool-page aside.is-section-fullscreen:not(.is-section-pinned),
+  .tool-page .target-row.is-section-fullscreen:not(.is-section-pinned) {
+    inset: 6px !important;
+    height: calc(100vh - 12px) !important;
+  }
+  .tool-page:has(.parameter-actions.is-section-pinned) details.is-section-fullscreen:not(.is-section-pinned),
+  .tool-page:has(.parameter-actions.is-section-pinned) section.is-section-fullscreen:not(.is-section-pinned),
+  .tool-page:has(.parameter-actions.is-section-pinned) aside.is-section-fullscreen:not(.is-section-pinned),
+  .tool-page:has(.parameter-actions.is-section-pinned) .target-row.is-section-fullscreen:not(.is-section-pinned) {
+    top: 54px !important;
+    height: calc(100vh - 60px) !important;
+  }
+  .tool-page .pinned-section-dock > :not(.is-floating-minimized):not(.is-section-fullscreen) { height: var(--mobile-card-height, auto) !important; }
+  .pinned-resize-handle { display: grid; }
 }
 
 @media (max-width: 420px) {

@@ -27,10 +27,15 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Prepare Velo Tools subpath
+        run: |
+          mkdir -p _site/velo-tools
+          cp -R velo-tools/. _site/velo-tools/
+
       - name: Upload Velo Tools site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: velo-tools
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment

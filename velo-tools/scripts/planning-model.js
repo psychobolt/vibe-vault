@@ -3,6 +3,10 @@
 (function (global) {
 "use strict";
 
+const { clone } = global.VeloUtils;
+const { clamp, conversions, finiteNumber: finite, roundDurationValue, roundTo, wholeNumber } = global.VeloMath;
+const model = (key) => global.VeloModelConfig.get(key);
+
 const PLAN_SCHEMA_VERSION = 1;
 
 const PROFILES = [
@@ -154,15 +158,6 @@ function createDefaultPlan() {
   };
 }
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
-function finite(value, fallback = 0) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : fallback;
-}
-
 function normalizePlan(input = {}) {
   if (input.schemaVersion !== PLAN_SCHEMA_VERSION) {
     throw new Error(`Unsupported plan schema. Expected version ${PLAN_SCHEMA_VERSION}.`);
@@ -186,7 +181,7 @@ function normalizePlan(input = {}) {
     plan.route[key] = Math.max(0, finite(plan.route[key]));
   }
   for (const key of ["movingDurationMinutes", "stoppedDurationMinutes", "climbingDurationMinutes", "declineDurationMinutes"]) {
-    plan.route[key] = Math.round(plan.route[key] * 10) / 10;
+    plan.route[key] = roundTo(plan.route[key], 1);
   }
   plan.resistance.cda = Math.max(0.1, finite(plan.resistance.cda, defaults.resistance.cda));
   plan.resistance.crr = Math.max(0.001, finite(plan.resistance.crr, defaults.resistance.crr));
@@ -194,7 +189,7 @@ function normalizePlan(input = {}) {
   plan.tape.stemWidthMm = Math.max(15, finite(plan.tape.stemWidthMm, defaults.tape.stemWidthMm));
   plan.tape.maxLengthMm = finite(plan.tape.maxLengthMm) > 0 ? finite(plan.tape.maxLengthMm) : null;
   plan.tape.baseFontSizePt = Math.max(3.5, finite(plan.tape.baseFontSizePt, defaults.tape.baseFontSizePt));
-  plan.tape.previewZoom = Math.min(250, Math.max(100, finite(plan.tape.previewZoom, defaults.tape.previewZoom)));
+  plan.tape.previewZoom = clamp(finite(plan.tape.previewZoom, defaults.tape.previewZoom), 100, 250);
   return plan;
 }
 
@@ -203,11 +198,11 @@ function normalizePowerTarget(target = {}, index = 0) {
     id: String(target.id || `target-${index + 1}`),
     label: String(target.label || "TARGET"),
     terrain: String(target.terrain || "flat"),
-    minPower: Math.max(0, Math.round(finite(target.minPower))),
-    targetPower: Math.max(0, Math.round(finite(target.targetPower))),
-    maxPower: Math.max(0, Math.round(finite(target.maxPower))),
+    minPower: wholeNumber(target.minPower),
+    targetPower: wholeNumber(target.targetPower),
+    maxPower: wholeNumber(target.maxPower),
     cadence: String(target.cadence || ""),
-    durationMinutes: Math.max(0, Math.round(finite(target.durationMinutes) * 10) / 10),
+    durationMinutes: Math.max(0, roundTo(finite(target.durationMinutes), 1)),
     durationValue: Math.max(0, roundDurationValue(finite(target.durationValue, target.durationMinutes), target.durationUnit)),
     durationUnit: ["seconds", "minutes", "hours"].includes(target.durationUnit) ? target.durationUnit : "minutes",
     textColor: String(target.textColor || "#111827"),
@@ -215,12 +210,6 @@ function normalizePowerTarget(target = {}, index = 0) {
     source: target.source ? String(target.source) : null,
     sourceProfile: target.sourceProfile ? String(target.sourceProfile) : null,
   };
-}
-
-function roundDurationValue(value, unit) {
-  const places = unit === "seconds" ? 0 : unit === "hours" ? 2 : 1;
-  const factor = 10 ** places;
-  return Math.round((Number(value) || 0) * factor) / factor;
 }
 
 function totalSystemMassKg(plan) {
@@ -249,12 +238,31 @@ function estimatedWorkload(plan) {
   if (threshold <= 0) return 0;
   return plan.powerTargets.reduce((sum, row) => {
     const hours = row.durationMinutes / 60;
-    return sum + hours * Math.pow(targetPower(row) / threshold, 2) * 100;
+    return sum + thresholdRelativeWorkload(targetPower(row), threshold, hours);
   }, 0);
+}
+
+function thresholdRelativeWorkload(averagePower, thresholdPower, hours) {
+  if (!(averagePower > 0) || !(thresholdPower > 0) || !(hours > 0)) return 0;
+  const settings = model("workload.thresholdRelative");
+  return hours * Math.pow(averagePower / thresholdPower, settings.intensityExponent) * settings.scorePerHour;
 }
 
 function combinedDemand(plan) {
   return plan.demand.aerobic + plan.demand.hardEffort + plan.demand.sprint;
+}
+
+// A profile describes how workload is distributed, not an empty set of demand
+// fields. Reuse the current total when possible; otherwise create a conservative
+// baseline from duration and the selected difficulty.
+function applyProfileDemandSuggestions(plan) {
+  const profile = PROFILES.find((item) => item.id === plan.demand.profile) || PROFILES[3];
+  const settings = model("demand.profileSuggestions");
+  const hours = Math.max(settings.minimumDurationHours, plan.route.movingDurationMinutes / 60);
+  const suggestedIntensity = plan.demand.difficulty === "difficult" ? settings.difficultIntensity : settings.moderateIntensity;
+  const total = combinedDemand(plan) || thresholdRelativeWorkload(suggestedIntensity, 1, hours);
+  [plan.demand.aerobic, plan.demand.hardEffort, plan.demand.sprint] = profile.shares.map((share) => roundTo(total * share, 1));
+  return plan.demand;
 }
 
 // A transparent route-physics estimate for Meet Target Duration mode. It deliberately
@@ -264,12 +272,13 @@ function estimateMechanicalPower(plan) {
   if (seconds <= 0 || plan.route.distanceKm <= 0) return 0;
   const speed = plan.route.distanceKm * 1000 / seconds;
   const mass = totalSystemMassKg(plan);
-  const gravity = 9.80665;
-  const airDensity = 1.225;
+  const settings = model("routePhysics.mechanicalPower");
+  const gravity = settings.gravityMps2;
+  const airDensity = settings.airDensityKgM3;
   const rolling = plan.resistance.crr * mass * gravity * speed;
   const aero = 0.5 * airDensity * plan.resistance.cda * Math.pow(speed, 3);
   const climbing = mass * gravity * plan.route.elevationGainM / seconds;
-  return (rolling + aero + climbing) / 0.97;
+  return (rolling + aero + climbing) / settings.drivetrainEfficiency;
 }
 
 function calculateDemandFromTargetDuration(plan) {
@@ -277,43 +286,36 @@ function calculateDemandFromTargetDuration(plan) {
   const threshold = plan.athlete.thresholdPower;
   if (averagePower <= 0 || threshold <= 0) return { averagePower: 0, workload: 0 };
   const hours = plan.route.movingDurationMinutes / 60;
-  const workload = hours * Math.pow(averagePower / threshold, 2) * 100;
+  const workload = thresholdRelativeWorkload(averagePower, threshold, hours);
   plan.demand.profile = deriveTargetDurationProfile(plan, averagePower);
   const profile = PROFILES.find((item) => item.id === plan.demand.profile) || PROFILES[3];
   const [aerobic, hardEffort, sprint] = profile.shares.map((share) => workload * share);
   plan.demand.aerobic = aerobic;
   plan.demand.hardEffort = hardEffort;
   plan.demand.sprint = sprint;
-  plan.demand.difficulty = averagePower / threshold >= 0.85 ? "difficult" : "moderate";
+  plan.demand.difficulty = averagePower / threshold >= model("profile.targetDurationClassification").difficultIntensityMin ? "difficult" : "moderate";
   return { averagePower, workload };
 }
 
 function deriveTargetDurationProfile(plan, averagePower) {
+  const settings = model("profile.targetDurationClassification");
   const distance = Math.max(0, plan.route.distanceKm);
   const moving = Math.max(1, plan.route.movingDurationMinutes);
   const elevationDensity = distance > 0 ? plan.route.elevationGainM / distance : 0;
   const climbingShare = Math.min(1, Math.max(0, plan.route.climbingDurationMinutes / moving));
   const intensity = plan.athlete.thresholdPower > 0 ? averagePower / plan.athlete.thresholdPower : 0;
-  if (elevationDensity >= 10 || climbingShare >= .25) return "climber";
-  if (elevationDensity >= 5 || climbingShare >= .22) return "gc";
-  if (elevationDensity < 2 && climbingShare < .08 && intensity >= .88) return "time-trialist";
+  if (elevationDensity >= settings.climberElevationMPerKm || climbingShare >= settings.climberTimeShare) return "climber";
+  if (elevationDensity >= settings.gcElevationMPerKm || climbingShare >= settings.gcTimeShare) return "gc";
+  if (elevationDensity < settings.timeTrialElevationMaxMPerKm && climbingShare < settings.timeTrialClimbShareMax && intensity >= settings.timeTrialIntensityMin) return "time-trialist";
   return "rouleur";
 }
-
-const conversions = {
-  kgToLb: (kg) => kg * 2.2046226218,
-  lbToKg: (lb) => lb / 2.2046226218,
-  kmToMi: (km) => km * 0.6213711922,
-  miToKm: (mi) => mi / 0.6213711922,
-  mToFt: (m) => m * 3.280839895,
-  ftToM: (ft) => ft / 3.280839895,
-};
 
 global.VeloPlanning = {
   PLAN_SCHEMA_VERSION, PROFILES, RESISTANCE_PRESETS, DEFAULT_POWER_TARGETS, PROFILE_TARGET_TEMPLATES,
   createDefaultPlan, createDefaultPowerTargets, createProfilePowerTargets, clone,
   normalizePlan, normalizePowerTarget, totalSystemMassKg, elapsedDurationMinutes,
   targetPower, durationWeightedAveragePower, estimatedWorkload, combinedDemand,
-  estimateMechanicalPower, calculateDemandFromTargetDuration, deriveTargetDurationProfile, conversions,
+  thresholdRelativeWorkload,
+  applyProfileDemandSuggestions, estimateMechanicalPower, calculateDemandFromTargetDuration, deriveTargetDurationProfile, conversions,
 };
 })(globalThis);
