@@ -58,12 +58,10 @@ function renderPlanningUI(root, plan, {
         ${numberField("Rolling Resistance (Crr)", "resistance.crr", plan.resistance.crr, disabled, "0.001", "Rolling-resistance coefficient for the tires and road surface. Typical road values are around 0.003 to 0.008.")}
       </div>`, sectionActions)}
     ${section("demand", "4", "Demand and Profile", `
-      <div class="field-grid field-grid--three">
+      <div class="field-grid field-grid--six">
         ${selectField("Planning Mode", "demand.mode", [["target-duration", "Meet Target Duration"], ["imported", "Use Imported Demand"], ["manual", "Manual Demand"]], plan.demand.mode, disabled, "Choose whether demand is estimated from route and target duration, supplied by imported parameters, or entered manually.")}
         ${selectField("Profile", "demand.profile", PROFILES.map((profile) => [profile.id, `${profile.label} (${profile.bestPower})`]), plan.demand.profile, derivedProfileDisabled, "Describes the ride's power-duration emphasis. Meet Target Duration selects a route-oriented profile automatically.")}
         ${selectField("Difficulty", "demand.difficulty", [["moderate", "Moderate"], ["difficult", "Difficult"]], plan.demand.difficulty, derivedProfileDisabled, "Describes the required intensity tier. Meet Target Duration derives it from estimated average power relative to threshold power.")}
-      </div>
-      <div class="field-grid field-grid--three">
         ${numberField("Aerobic Demand", "demand.aerobic", number(plan.demand.aerobic), demandDisabled, "0.1", "Steady endurance workload accumulated below the lower threshold. This usually makes up most of the ride's workload.")}
         ${numberField("Hard-Effort Demand", "demand.hardEffort", number(plan.demand.hardEffort), demandDisabled, "0.1", "Workload from sustained hard efforts such as attacks, hard climbs, or prolonged surges.")}
         ${numberField("Sprint Demand", "demand.sprint", number(plan.demand.sprint), demandDisabled, "0.1", "Workload from very short explosive efforts near maximum power, such as sprints or sharp accelerations.")}

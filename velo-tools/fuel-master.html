@@ -5,26 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fuel Master</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./tool-shell.css">
   <link rel="stylesheet" href="./fuel-master.css">
 </head>
-<body class="fuel-master-page">
+<body class="tool-page fuel-master-page">
 <div class="app">
   <header class="app-header">
     <h1>Fuel Master</h1>
     <p>Turn a shared ride plan into a practical carbohydrate, bottle, and gel strategy.</p>
   </header>
 
-  <nav class="toolbar" aria-label="Parameters">
+  <div class="section-label">Parameters</div>
+  <nav id="parameter-actions" class="parameter-actions" aria-label="Parameters">
     <div class="parameter-file-slot">
-      <button id="load-button" class="parameter-load" type="button">Load</button>
+      <button id="load-button" class="parameter-load parameter-icon-button" type="button" title="Load Parameters" aria-label="Load Parameters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Zm9 10V11m0 6 3-3m-3 3-3-3"/></svg></button>
       <div id="loaded-plan-control" class="loaded-file-control" hidden>
         <input id="loaded-plan-name" type="text" readonly aria-label="Loaded parameter file" title="Click to replace the loaded parameter file">
         <button id="remove-plan" class="icon-button danger" type="button" title="Remove loaded parameter file" aria-label="Remove loaded parameter file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
       </div>
       <input class="file-input" id="load-plan" type="file" accept="application/json,.json">
     </div>
-    <button id="save-button" class="parameter-save" type="button">Save</button>
-    <button id="reset-button" class="danger" type="button">Reset</button>
+    <button id="save-button" class="parameter-save parameter-icon-button" type="button" title="Save Parameters" aria-label="Save Parameters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3Zm3 0v6h8V3M8 21v-7h8v7"/></svg></button>
+    <button id="reset-button" class="danger parameter-icon-button" type="button" title="Reset Parameters" aria-label="Reset Parameters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
   </nav>
   <p id="status" class="status floating-status" role="status" aria-live="polite"></p>
 
@@ -91,7 +93,7 @@
   <script src="./activity-parser.js"></script>
   <script src="./planning-ui.js"></script>
   <script>
-    const { createPlanStore, downloadJson, readJsonFile, setStatus } = VeloApp;
+    const { attachStickyActions, createPlanStore, downloadJson, readJsonFile, setStatus } = VeloApp;
     const { calculateDemandFromTargetDuration, combinedDemand, createDefaultPlan, durationWeightedAveragePower, elapsedDurationMinutes, estimatedWorkload, estimateMechanicalPower, normalizePlan } = VeloPlanning;
     const { renderPlanningUI } = VeloPlanningUI;
     const { parseActivityFile } = VeloActivity;
@@ -103,7 +105,9 @@
       authority: document.querySelector("#authority-note"), remove: document.querySelector("#remove-plan"),
       loadButton: document.querySelector("#load-button"), loadedControl: document.querySelector("#loaded-plan-control"),
       loadedName: document.querySelector("#loaded-plan-name"),
+      parameterActions: document.querySelector("#parameter-actions"),
     };
+    attachStickyActions(elements.parameterActions);
     const fuelDefaults = {
       mode: "automatic", customCarbs: 70, bottles: 2, bottleCapacity: 90, gelSizeOz: 5, maxGelStop: 45,
       gelFlasks: 1, waterFlasks: 1, drinkName: "Gatorade Thirst Quencher", drinkCarbs: 21,

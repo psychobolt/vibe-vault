@@ -125,5 +125,19 @@ function wholeWatts(value) {
   return Math.max(0, Math.round(Number(value) || 0));
 }
 
-global.VeloApp = { createPlanStore, readJsonFile, downloadFile, downloadJson, setStatus, wholeWatts };
+// Shared sticky-toolbar behavior keeps the compact parameter controls identical
+// across both tools and avoids page-specific scroll handlers drifting apart.
+function attachStickyActions(element, top = 8) {
+  if (!element) return () => {};
+  const update = () => element.classList.toggle("is-sticky", element.getBoundingClientRect().top <= top);
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update, { passive: true });
+  update();
+  return () => {
+    window.removeEventListener("scroll", update);
+    window.removeEventListener("resize", update);
+  };
+}
+
+global.VeloApp = { attachStickyActions, createPlanStore, readJsonFile, downloadFile, downloadJson, setStatus, wholeWatts };
 })(globalThis);

@@ -1,0 +1,272 @@
+/* Shared compact shell for Fuel Master and Power Master.
+   Specialized controls stay in each tool's stylesheet. */
+.tool-page {
+  padding: 12px;
+  color: var(--color-text);
+  background: var(--color-page);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.tool-page .app {
+  width: min(100%, var(--content-max));
+  margin: auto;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-app);
+}
+
+.tool-page .app-header {
+  padding: 0 0 9px;
+  border-bottom: 3px solid #e8eaf6;
+  color: var(--color-text);
+  background: none;
+}
+
+.tool-page .app-header h1 { color: var(--color-primary); font-size: 24px; }
+.tool-page .app-header p { color: var(--color-text-muted); font-size: 12px; }
+
+.tool-page .section-label {
+  margin: 14px 0 6px;
+  padding-left: 7px;
+  border-left: 4px solid var(--color-accent);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+}
+
+.tool-page .status {
+  min-height: 18px;
+  margin: 0 0 8px 12px;
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tool-page .floating-status { position: fixed; min-height: 0; margin: 0; color: #fff; font-size: 12px; }
+
+.tool-page .parameter-actions {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 86px 86px 86px;
+  justify-content: start;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  padding: 9px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.tool-page .parameter-actions:has(.loaded-file-control:not([hidden])) {
+  grid-template-columns: minmax(220px, 300px) 86px 86px;
+}
+
+.tool-page .parameter-actions.is-sticky {
+  border-color: #80cbc4;
+  border-top: 3px solid var(--color-accent);
+  background: rgba(255, 255, 255, .98);
+  box-shadow: var(--shadow-sticky);
+}
+
+.tool-page .parameter-actions > button,
+.tool-page .parameter-file-slot > button {
+  min-width: 86px;
+  min-height: 34px;
+  padding: 6px 9px;
+  border-radius: 5px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.tool-page .parameter-file-slot { grid-column: 1; min-width: 0; }
+.tool-page .parameter-file-slot > button { width: 86px; }
+.tool-page .parameter-file-slot:has(.loaded-file-control:not([hidden])) { width: min(300px, calc(100vw - 40px)); }
+.tool-page .parameter-save { grid-column: 2; }
+.tool-page .parameter-actions > .danger { grid-column: 3; }
+.tool-page .parameter-icon-button { display: grid; place-items: center; }
+
+.tool-page .parameter-icon-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tool-page .loaded-file-control { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 5px; }
+.tool-page .loaded-file-control.is-locked { grid-template-columns: minmax(0, 1fr); }
+
+.tool-page .loaded-file-control input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 5px 7px;
+  overflow: hidden;
+  border: 1px solid var(--color-control-border);
+  border-radius: 5px;
+  color: #455a64;
+  background: #f7f9fa;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.tool-page .loaded-file-control .icon-button { width: 34px; min-width: 34px; min-height: 34px; padding: 0; }
+.tool-page .planning-stack { display: grid; gap: 0; }
+.tool-page .card { margin: 0 0 13px; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+
+.tool-page .section-title {
+  min-height: 32px;
+  margin: 11px 0 7px;
+  padding-left: 7px;
+  border-left: 4px solid var(--color-accent);
+}
+
+.tool-page .section-heading { align-items: center; gap: 9px; }
+.tool-page .section-title h2 { margin: 0; }
+
+.tool-page .section-title h2,
+.tool-page .section-title span {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.tool-page .section-actions { margin-left: auto; padding-right: 2px; }
+.tool-page .icon-button { width: var(--icon-control-size); min-height: var(--icon-control-size); border-radius: 6px; color: var(--color-icon); background: transparent; }
+.tool-page .icon-button svg { width: 19px; height: 19px; }
+.tool-page .icon-button:hover:not(:disabled) { color: var(--color-primary); background: var(--color-panel-muted); }
+.tool-page .icon-button.danger { color: var(--color-icon); background: transparent; }
+.tool-page .icon-button.danger:hover:not(:disabled) { color: #c62828; }
+
+.tool-page .field-grid,
+.tool-page .appearance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 9px;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+}
+
+.tool-page .field-grid--six,
+.tool-page .field-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tool-page .field > span { color: #455a64; font-size: 11px; }
+.tool-page .field > .field-label { min-width: 0; overflow: visible; }
+
+.tool-page .field input,
+.tool-page .field select {
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: 6px 8px;
+  border-color: var(--color-control-border);
+  border-radius: 5px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tool-page select {
+  appearance: none;
+  padding-right: 25px !important;
+  overflow: hidden;
+  background-color: var(--color-surface);
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-icon) 50%), linear-gradient(135deg, var(--color-icon) 50%, transparent 50%);
+  background-position: calc(100% - 11px) 50%, calc(100% - 7px) 50%;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  text-overflow: ellipsis;
+}
+
+.tool-page .field input:disabled,
+.tool-page .field select:disabled { color: #455a64; background: var(--color-panel-muted); }
+.tool-page .activity-control { margin: 0 0 10px; }
+
+.tool-page .summary-units {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tool-page .summary-units select {
+  min-height: 28px;
+  padding: 3px 22px 3px 6px;
+  border: 1px solid var(--color-control-border);
+  border-radius: var(--radius-sm);
+  color: #455a64;
+  background-color: var(--color-surface);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tool-page .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 7px; }
+.tool-page .metric { display: block; padding: 8px 9px; border: 0; border-left: 3px solid var(--color-summary-accent); border-radius: var(--radius-sm); background: var(--color-summary); color: #455a64; font-size: 11px; }
+.tool-page .metric strong { display: block; margin-top: 2px; color: var(--color-summary-text); font-size: 16px; }
+
+/* Small utility set for page composition; keep behavior out of tool markup. */
+.u-min-0 { min-width: 0; }
+.u-w-full { width: 100%; }
+.u-grid { display: grid; }
+.u-stack-2 { display: grid; gap: var(--space-2); }
+.u-center { display: grid; place-items: center; }
+
+@media (max-width: 1120px) {
+  .tool-page { padding: 8px; }
+  .tool-page .app { padding: 14px; border-radius: 8px; }
+}
+
+@media (max-width: 640px) {
+  .tool-page { padding: 5px; }
+  .tool-page .app { padding: 10px; }
+  .tool-page .parameter-actions { grid-template-columns: 42px 42px 42px; align-items: center; }
+  .tool-page .parameter-actions.is-sticky { top: 4px; }
+  .tool-page .parameter-actions:has(.loaded-file-control:not([hidden])) { grid-template-columns: minmax(190px, 1fr) 42px 42px; }
+  .tool-page .parameter-actions .parameter-file-slot { grid-column: 1; width: auto; }
+  .tool-page .parameter-actions .parameter-file-slot > button,
+  .tool-page .parameter-actions > button { width: 42px; min-width: 42px; min-height: 34px; padding: 0; }
+  .tool-page .parameter-save { grid-column: 2; }
+  .tool-page .parameter-actions > .danger { grid-column: 3; }
+  .tool-page .field-grid,
+  .tool-page .appearance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 7px; }
+  .tool-page .field-grid--six,
+  .tool-page .field-grid--three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tool-page .field > .field-label { flex-wrap: wrap; overflow-wrap: anywhere; white-space: normal; }
+  .tool-page .tooltip::after {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+  .tool-page .tooltip::before { display: none; }
+  .tool-page select { padding-right: 23px !important; }
+  .tool-page .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 420px) {
+  .tool-page .app { padding: 8px; }
+  .tool-page .section-title h2,
+  .tool-page .section-title span { font-size: 11px; letter-spacing: .6px; }
+  .tool-page .icon-button { width: 30px; min-height: 30px; }
+}

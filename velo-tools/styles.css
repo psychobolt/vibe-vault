@@ -1,4 +1,46 @@
-:root { --primary: #1a237e; --accent: #006064; --danger: #b71c1c; color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #212121; background: #cfd8dc; }
+:root {
+  /* Shared design tokens. Tool-specific styles should consume these instead of
+     introducing near-duplicate colors, dimensions, and spacing values. */
+  --color-primary: #1a237e;
+  --color-accent: #006064;
+  --color-accent-dark: #004d40;
+  --color-load: #6a1b9a;
+  --color-load-dark: #4a148c;
+  --color-danger: #b71c1c;
+  --color-text: #212121;
+  --color-text-muted: #546e7a;
+  --color-icon: #607d8b;
+  --color-page: #cfd8dc;
+  --color-surface: #fff;
+  --color-panel: #f5f5f5;
+  --color-panel-muted: #eceff1;
+  --color-border: #e0e0e0;
+  --color-control-border: #b0bec5;
+  --color-summary: #e0f7fa;
+  --color-summary-accent: #00acc1;
+  --color-summary-text: #006064;
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 11px;
+  --space-5: 14px;
+  --radius-sm: 4px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --control-height: 36px;
+  --icon-control-size: 32px;
+  --content-max: 1180px;
+  --shadow-app: 0 5px 16px rgba(0, 0, 0, .1);
+  --shadow-sticky: 0 5px 16px rgba(38, 50, 56, .2);
+  /* Existing names remain aliases for older component rules. */
+  --primary: var(--color-primary);
+  --accent: var(--color-accent);
+  --danger: var(--color-danger);
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: var(--color-text);
+  background: var(--color-page);
+}
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin: 0; }
@@ -72,7 +114,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .tape { width: 25.4mm; min-height: 70mm; margin: 1rem auto; border: 1px dashed #8d98a8; background: white; }
 .tape-row { display: grid; grid-template-columns: 1fr auto; padding: 3px 4px; font-size: 7pt; font-weight: 800; }
 .locked-note { padding: .65rem; border-radius: .55rem; color: #422a88; background: #f0ebff; font-size: .85rem; }
-.file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .activity-control { display: flex; align-items: center; gap: .5rem; max-width: 460px; margin-bottom: .75rem; }
 .activity-load { display: inline-flex; align-items: center; min-height: 36px; max-width: 100%; padding: .45rem .75rem; border-radius: .45rem; color: white; background: #455a64; font-size: .75rem; font-weight: 750; text-transform: uppercase; cursor: pointer; }
 .activity-loaded-control { flex: 1 1 auto; width: 100%; }
