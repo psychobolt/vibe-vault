@@ -86,7 +86,7 @@
    so the header and first form section move down rather than being obscured. */
 .tool-page:has(.parameter-actions.is-section-pinned) { padding-top: 76px; }
 .tool-page:has(.parameter-actions.is-section-pinned) > .app > .section-label { display: none; }
-.tool-page:has(.pinned-section-dock > .is-floating-minimized) { padding-bottom: 68px; }
+.tool-page:has(.pinned-section-dock > .is-floating-minimized) { padding-bottom: 52px; }
 
 .tool-page .parameter-actions:has(.loaded-file-control:not([hidden])) {
   grid-template-columns: minmax(220px, 300px) 86px 86px minmax(12px, 1fr) 32px;
@@ -548,7 +548,7 @@
 @media (max-width: 640px) {
   .tool-page { padding: 5px; }
   .tool-page:has(.parameter-actions.is-section-pinned) { padding-top: 56px; }
-  .tool-page:has(.pinned-section-dock > .is-floating-minimized) { padding-bottom: 62px; }
+  .tool-page:has(.pinned-section-dock > .is-floating-minimized) { padding-bottom: 50px; }
   .tool-page .app { padding: 10px; }
   .tool-page .parameter-actions { grid-template-columns: 38px 38px 38px minmax(8px, 1fr) 32px; align-items: center; gap: 4px; padding: 6px; }
   .tool-page .parameter-actions.is-sticky { top: 4px; }
@@ -638,8 +638,10 @@
     bottom: 6px !important;
     left: var(--taskbar-left) !important;
     width: var(--taskbar-width) !important;
+    min-height: 0 !important;
     max-height: none;
     margin: 0;
+    padding: 4px;
   }
   .tool-page .pinned-section-dock > details.is-section-pinned.is-section-fullscreen,
   .tool-page .pinned-section-dock > section.is-section-pinned.is-section-fullscreen,

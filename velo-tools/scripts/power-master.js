@@ -1,7 +1,7 @@
     const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSidebar, createPlanStore, downloadFile, downloadJson, protectSummaryActions, readJsonFile, renderSummaryFields, restoreSectionAnchor, setStatus, wholeWatts } = VeloApp;
     const { roundTo } = VeloMath;
     const { enhanceNumberSliders, escapeHtml } = VeloUtils;
-    const { PROFILES, calculateDemandFromTargetDuration, combinedDemand, createDefaultPlan, createDefaultPowerTargets, createProfilePowerTargets, durationWeightedAveragePower, estimatedWorkload, estimateMechanicalPower, normalizePlan, targetPower } = VeloPlanning;
+    const { PROFILES, calculateDemandFromTargetDuration, combinedDemand, createDefaultPlan, createDefaultPowerTargets, createProfilePowerTargets, deriveDemandProfile, durationWeightedAveragePower, estimatedWorkload, estimateMechanicalPower, normalizePlan, targetPower } = VeloPlanning;
     const { renderPlanningUI } = VeloPlanningUI;
     const { parseActivityFile } = VeloActivity;
 
@@ -43,6 +43,7 @@
     const store = createPlanStore("velo-tools:power-master", initial);
     const histories = Object.fromEntries(["athlete", "route", "resistance", "demand", "tape", "targets"].map((id) => [id, { undo: [], redo: [] }]));
     const loadedBaselineKey = "velo-tools:power-master:loaded-baseline";
+    const sharedPowerPlanKey = "velo-tools:latest-power-plan";
     let loadedBaseline = readLoadedBaseline();
     let targetSortable = null;
     const collapsedTargetIds = new Set();
@@ -109,6 +110,7 @@
         minPower: 0,
         targetPower: plan.athlete.thresholdPower,
         maxPower: 0,
+        powerMode: "target",
         cadence: "90",
         durationMinutes: 10,
         durationValue: 10,
@@ -189,7 +191,7 @@
         if (dock) dock.hidden = !dock.children.length;
       });
       [...collapsedTargetIds].forEach((id) => { if (!activeIds.has(id)) collapsedTargetIds.delete(id); });
-      elements.targets.innerHTML = plan.powerTargets.length ? `<div class="target-table"><div class="target-head"><span></span><span>Label</span><span>Terrain</span><span>Min W</span><span>Target W</span><span>Max W</span><span>Cadence</span><span>Duration</span><span>Text</span><span>BG</span><span></span><span></span></div><div class="target-list-body">${plan.powerTargets.map((row, index) => `
+      elements.targets.innerHTML = plan.powerTargets.length ? `<div class="target-table"><div class="target-list-body">${plan.powerTargets.map((row, index) => `
         <div id="${targetDomId(row.id)}" class="target-row ${collapsedTargetIds.has(row.id) ? "is-collapsed" : ""}" data-index="${index}" data-target-id="${escapeHtml(row.id)}">
           <span class="target-leading-controls" aria-label="Reorder and edit ${escapeHtml(row.label)}">
             <span class="drag-handle" title="Drag to reorder" aria-label="Drag ${escapeHtml(row.label)} to reorder">⋮⋮</span>
@@ -200,9 +202,10 @@
           </span>
           ${targetLabelField(row)}
           ${terrainField(row.terrain)}
-          ${field("Min W", "minPower", row.minPower, "number")}
-          ${field("Target W", "targetPower", row.targetPower, "number")}
-          ${field("Max W", "maxPower", row.maxPower, "number")}
+          ${powerModeField(row.powerMode)}
+          ${row.powerMode === "range" ? field("Min W", "minPower", row.minPower, "number") : ""}
+          ${row.powerMode === "target" ? field("Target W", "targetPower", row.targetPower, "number") : ""}
+          ${row.powerMode === "range" ? field("Max W", "maxPower", row.maxPower, "number") : ""}
           ${field("Cadence", "cadence", row.cadence, "text")}
           ${durationField(row)}
           ${field("Text", "textColor", row.textColor, "color")}
@@ -228,6 +231,16 @@
         const row = plan.powerTargets[Number(event.target.closest("[data-index]").dataset.index)];
         const key = event.target.dataset.key;
         if (["label", "terrain", "cadence", "textColor", "backgroundColor"].includes(key)) row[key] = event.target.value;
+        else if (key === "powerMode") {
+          row.powerMode = event.target.value;
+          if (row.powerMode === "range" && (!(row.minPower > 0) || !(row.maxPower > 0))) {
+            const center = row.targetPower || plan.athlete.thresholdPower;
+            row.minPower = Math.max(1, Math.round(center * .97));
+            row.maxPower = Math.max(row.minPower, Math.round(center * 1.03));
+          } else if (row.powerMode === "target" && !(row.targetPower > 0)) {
+            row.targetPower = Math.round((row.minPower + row.maxPower) / 2) || plan.athlete.thresholdPower;
+          }
+        }
         else if (key.includes("Power")) row[key] = wholeWatts(event.target.value);
         else if (key === "durationValue") {
           row.durationValue = normalizeDurationValue(event.target.value, row.durationUnit);
@@ -296,6 +309,10 @@
       return `<label class="field target-field--terrain"><span>Terrain</span><select data-key="terrain">${["flat", "incline", "climb", "decline", "steep-ramp"].map((terrain) => `<option value="${terrain}" ${terrain === value ? "selected" : ""}>${terrain}</option>`).join("")}</select></label>`;
     }
 
+    function powerModeField(value) {
+      return `<label class="field target-field--power-mode"><span>Power</span><select data-key="powerMode"><option value="target" ${value === "target" ? "selected" : ""}>Target</option><option value="range" ${value === "range" ? "selected" : ""}>Range</option></select></label>`;
+    }
+
     function durationField(row) {
       const unit = row.durationUnit || "minutes";
       const step = unit === "seconds" ? 1 : unit === "hours" ? 0.01 : 0.1;
@@ -319,6 +336,8 @@
           animation: 150,
           draggable: ".target-row",
           handle: ".drag-handle",
+          filter: "input, select, button, label",
+          preventOnFilter: false,
           ghostClass: "target-row--ghost",
           chosenClass: "dragging",
           dragClass: "dragging",
@@ -388,14 +407,66 @@
       const estimatedIf = plan.athlete.thresholdPower > 0 ? displayedPower / plan.athlete.thresholdPower : 0;
       const speedKmh = plan.route.movingDurationMinutes > 0 ? plan.route.distanceKm / (plan.route.movingDurationMinutes / 60) : 0;
       const speed = plan.units === "imperial" ? speedKmh * 0.6213711922 : speedKmh;
+      const workload = plan.powerTargets.length ? estimatedWorkload(plan) : combinedDemand(plan);
+      const demandTotal = combinedDemand(plan);
+      const alignment = plan.powerTargets.length && demandTotal > 0 ? ((workload - demandTotal) / demandTotal) * 100 : null;
+      const displayedAlignment = alignment == null ? null : Math.round(alignment * 10) / 10;
+      const alignmentTone = displayedAlignment == null || Math.abs(displayedAlignment) <= .9 ? "aligned" : displayedAlignment > 0 ? "positive" : "negative";
+      // Alignment controls stay out of the way once the plan is within ±0.9%.
+      const alignmentActions = displayedAlignment != null && Math.abs(displayedAlignment) > .9 ? [
+        { action: "demand-minus", label: "Decrease combined demand by 1%", text: "−" },
+        { action: "demand-plus", label: "Increase combined demand by 1%", text: "+" },
+        { action: "demand-fit", label: "Recalculate demand and profile from the power targets", text: "↻", kind: "fit" },
+      ] : [];
       renderSummaryFields(elements.summary, [
         { label: "Moving duration", value: `${plan.route.movingDurationMinutes.toFixed(1)} min`, tooltip: "Total planned time in motion across the route." },
         { label: "Average speed", value: speed > 0 ? `${speed.toFixed(1)} ${plan.units === "imperial" ? "mph" : "km/h"}` : "Add route distance", tooltip: "Route distance divided by moving duration; stopped time is excluded." },
         { label: weighted ? "Duration-weighted power" : "Estimated average power", value: displayedPower ? `${Math.round(displayedPower)} W` : "Add route distance", tooltip: "Average mechanical power weighted by each target row's assigned duration." },
         { label: "Estimated IF", value: estimatedIf > 0 ? estimatedIf.toFixed(2) : "—", tooltip: "Duration-weighted average power divided by threshold power; this is an estimate, not normalized-power IF." },
-        { label: "Estimated workload", value: (plan.powerTargets.length ? estimatedWorkload(plan) : combinedDemand(plan)).toFixed(1), tooltip: "Simplified threshold-relative workload accumulated from target power and duration." },
-        { label: "Combined demand", value: combinedDemand(plan).toFixed(1), tooltip: "The sum of aerobic, hard-effort, and sprint demand." },
+        { label: "Estimated workload", value: workload.toFixed(1), tooltip: "Simplified threshold-relative workload from the target rows. Overlapping row durations are proportionally normalized to the route moving duration." },
+        { label: "Combined demand", value: demandTotal.toFixed(1), tooltip: "The sum of aerobic, hard-effort, and sprint demand." },
+        { label: "Demand alignment", value: displayedAlignment == null ? "—" : `${displayedAlignment >= 0 ? "+" : ""}${displayedAlignment.toFixed(1)}%`, tooltip: "Difference between Power Master target workload and combined demand. Controls appear only outside the ±0.9% aligned range.", tone: alignmentTone, actions: alignmentActions },
       ]);
+      elements.summary.querySelectorAll("[data-summary-action]").forEach((button) => button.addEventListener("click", () => {
+        if (button.dataset.summaryAction === "demand-minus") adjustDemandRatio(.99);
+        if (button.dataset.summaryAction === "demand-plus") adjustDemandRatio(1.01);
+        if (button.dataset.summaryAction === "demand-fit") fitDemandToPowerTargets();
+      }));
+    }
+
+    function adjustDemandRatio(factor) {
+      const plan = store.get();
+      if (!(combinedDemand(plan) > 0)) return;
+      remember("demand");
+      for (const key of ["aerobic", "hardEffort", "sprint"]) plan.demand[key] *= factor;
+      plan.demand.mode = "manual";
+      store.set(plan);
+      setStatus(elements.status, `${factor > 1 ? "Increased" : "Decreased"} combined demand by 1%.`);
+    }
+
+    function fitDemandToPowerTargets() {
+      const plan = store.get();
+      if (!plan.powerTargets.length || !(plan.athlete.thresholdPower > 0)) return;
+      remember("demand");
+      const workload = estimatedWorkload(plan);
+      const currentDemand = combinedDemand(plan);
+      const intensity = durationWeightedAveragePower(plan) / plan.athlete.thresholdPower;
+      plan.demand.difficulty = intensity >= VeloModelConfig.get("profile.targetDurationClassification").difficultIntensityMin ? "difficult" : "moderate";
+      if (currentDemand > 0) {
+        const scale = workload / currentDemand;
+        plan.demand.aerobic *= scale;
+        plan.demand.hardEffort *= scale;
+        plan.demand.sprint *= scale;
+      } else {
+        plan.demand.aerobic = workload;
+        plan.demand.hardEffort = 0;
+        plan.demand.sprint = 0;
+      }
+      plan.demand.profile = deriveDemandProfile(plan);
+      plan.demand.mode = "manual";
+      store.set(plan);
+      const profile = PROFILES.find((item) => item.id === plan.demand.profile)?.label || "best matching profile";
+      setStatus(elements.status, `Recalculated demand from the power targets and matched ${profile} from its demand composition.`);
     }
 
     function renderTapeAppearance(plan) {
@@ -434,7 +505,12 @@
     }
 
     function powerText(row) {
-      if (row.minPower > 0 && row.maxPower > 0) return `${row.minPower}-${row.maxPower}`;
+      if (row.powerMode === "range") {
+        if (row.minPower > 0 && row.maxPower > 0) return `${row.minPower}-${row.maxPower}`;
+        if (row.minPower > 0) return `${row.minPower}+`;
+        return row.maxPower > 0 ? `≤${row.maxPower}` : "—";
+      }
+      if (row.powerMode === "target") return row.targetPower > 0 ? `${row.targetPower}` : "—";
       if (row.targetPower > 0) return `${row.targetPower}`;
       if (row.minPower > 0) return `${row.minPower}+`;
       return row.maxPower > 0 ? `≤${row.maxPower}` : "—";
@@ -465,7 +541,7 @@
     document.querySelector("#add-target").addEventListener("click", () => {
       remember("targets");
       const plan = store.get();
-      plan.powerTargets.push({ id: crypto.randomUUID(), label: "TARGET", terrain: "flat", minPower: 0, targetPower: plan.athlete.thresholdPower, maxPower: 0, cadence: "90", durationMinutes: 10, textColor: "#455a64", backgroundColor: "#ffffff" });
+      plan.powerTargets.push({ id: crypto.randomUUID(), label: "TARGET", terrain: "flat", powerMode: "target", minPower: 0, targetPower: plan.athlete.thresholdPower, maxPower: 0, cadence: "90", durationMinutes: 10, textColor: "#455a64", backgroundColor: "#ffffff" });
       commit(plan, "powerTargets");
     });
     function applyProfileTargets(mode) {
@@ -612,7 +688,10 @@
       setStatus(elements.status, resetToFile ? `Restored ${plan.source.fileName}.` : "Power Master reset to defaults.");
     });
 
-    store.subscribe(render);
+    store.subscribe((plan) => {
+      localStorage.setItem(sharedPowerPlanKey, JSON.stringify(plan));
+      render(plan);
+    });
     if (!store.loadLocal()) render(initial);
     else if (!store.get().powerTargets.length) {
       const restored = store.get();
@@ -623,4 +702,5 @@
       setLoadedBaseline(store.get());
       render(store.get());
     }
+    localStorage.setItem(sharedPowerPlanKey, JSON.stringify(store.get()));
     restoreSectionAnchor();

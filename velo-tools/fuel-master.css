@@ -80,6 +80,7 @@
 }
 
 .fuel-master-page .equipment-card { border-color: #fff59d; background: #fffde7; }
+.fuel-master-page .recipe-warning { margin-top: 7px; padding: 7px 8px; border-left: 3px solid #f9a825; border-radius: 4px; color: #6d4c00; background: #fff8e1; font-weight: 700; }
 .fuel-master-page .equipment-card h3,
 .fuel-master-page .recipe-card h3 { margin: 0 0 7px; color: #5d4037; font-size: 13px; }
 .fuel-master-page .equipment-card ul,
@@ -87,10 +88,13 @@
 .fuel-master-page .recipe-card ol { margin: 0; padding-left: 20px; }
 .fuel-master-page .target-badge { float: right; padding: 3px 6px; border-radius: var(--radius-sm); color: #b71c1c; background: #ffebee; font-size: 10px; }
 
-.fuel-master-page #summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-.fuel-master-page #summary .metric:has(.metric-actions) { grid-column: 1 / -1; }
 .fuel-master-page .ride-plan-section { margin-top: 13px; }
 .fuel-master-page .recipe-item { min-width: 0; }
+.fuel-master-page .power-import-panel { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 8px; align-items: center; padding: 11px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-panel); }
+.fuel-master-page .power-import-file { min-width: 0; }
+.fuel-master-page .power-import-file > button { min-height: 34px; padding: 6px 10px; font-size: 11px; text-transform: uppercase; }
+.fuel-master-page .power-import-panel > .secondary { min-height: 34px; padding: 6px 10px; font-size: 11px; }
+.fuel-master-page .power-import-panel > p { grid-column: 1 / -1; margin: 0; color: var(--color-text-muted); font-size: 11px; line-height: 1.45; }
 
 @media (max-width: 1120px) {
   .fuel-master-page .layout { grid-template-columns: 1fr; }
@@ -98,7 +102,7 @@
 
 @media (max-width: 640px) {
   .fuel-master-page .checklist-group { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
-  .fuel-master-page #summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fuel-master-page .power-import-panel { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 420px) {

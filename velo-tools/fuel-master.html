@@ -17,15 +17,15 @@
     <p>Turn a shared ride plan into a practical carbohydrate, bottle, and gel strategy.</p>
   </header>
 
-  <div class="section-label">0&nbsp; Load Power Parameters</div>
-  <nav id="parameter-actions" class="parameter-actions" aria-label="Load Power Parameters">
+  <div class="section-label">Fuel Parameters</div>
+  <nav id="parameter-actions" class="parameter-actions" aria-label="Fuel Parameters">
     <div class="parameter-file-slot">
-      <button id="load-button" class="parameter-load parameter-icon-button" type="button" title="Load Power Parameters" aria-label="Load Power Parameters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Zm9 10V11m0 6 3-3m-3 3-3-3"/></svg></button>
-      <div id="loaded-plan-control" class="loaded-file-control" hidden>
-        <input id="loaded-plan-name" type="text" readonly aria-label="Loaded parameter file" title="Click to replace the loaded parameter file">
-        <button id="remove-plan" class="icon-button danger" type="button" title="Remove loaded parameter file" aria-label="Remove loaded parameter file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
+      <button id="load-fuel-button" class="parameter-load parameter-icon-button" type="button" title="Load Fuel Parameters" aria-label="Load Fuel Parameters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Zm9 10V11m0 6 3-3m-3 3-3-3"/></svg></button>
+      <div id="loaded-fuel-control" class="loaded-file-control" hidden>
+        <input id="loaded-fuel-name" type="text" readonly aria-label="Loaded fuel parameter file" title="Click to replace the loaded fuel parameter file">
+        <button id="remove-fuel-parameters" class="icon-button danger" type="button" title="Remove loaded fuel parameter file" aria-label="Remove loaded fuel parameter file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
       </div>
-      <input class="file-input" id="load-plan" type="file" accept="application/json,.json">
+      <input class="file-input" id="load-fuel-parameters" type="file" accept="application/json,.json">
     </div>
     <button id="save-button" class="parameter-save parameter-icon-button" type="button" title="Save Parameters" aria-label="Save Parameters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h12l2 2v16H5V3Zm3 0v6h8V3M8 21v-7h8v7"/></svg></button>
     <button id="reset-button" class="danger parameter-icon-button" type="button" title="Reset Parameters" aria-label="Reset Parameters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
@@ -35,6 +35,18 @@
 
   <main class="layout">
     <div class="stack">
+      <details id="section-power-import" class="card collapsible-section" open>
+        <summary class="section-title"><div class="section-heading"><h2>Load Power Parameters</h2></div><div class="section-actions"><button type="button" class="icon-button section-link" data-section-link="section-power-import" title="Copy link to Load Power Parameters" aria-label="Copy link to Load Power Parameters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2"/></svg></button><button class="icon-button section-sticky-toggle" type="button" data-sticky-target="section-power-import" title="Pin while scrolling" aria-label="Pin while scrolling" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button></div></summary>
+        <div class="power-import-panel">
+          <div class="power-import-file">
+            <button id="load-power-button" class="parameter-load" type="button">Choose Power JSON</button>
+            <div id="loaded-power-control" class="loaded-file-control" hidden><input id="loaded-power-name" type="text" readonly aria-label="Loaded power parameter file" title="Click to replace the loaded power parameter file"><button id="remove-power-plan" class="icon-button danger" type="button" title="Remove power parameters" aria-label="Remove power parameters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button></div>
+            <input class="file-input" id="load-power-plan" type="file" accept="application/json,.json">
+          </div>
+          <button id="load-local-power-plan" class="secondary" type="button" hidden>Use Latest Local Power Plan</button>
+          <p>Import detailed Power Master targets. Switching here from Power Master loads its latest browser-local plan automatically. Imported demand remains unchanged unless Ride Plan's fit action is used.</p>
+        </div>
+      </details>
       <section id="authority-note" class="locked-note" hidden></section>
       <div id="planning-fields" class="stack"></div>
       <details id="section-pantry" class="card collapsible-section" open>
@@ -49,7 +61,8 @@
         <div class="field-grid field-grid--three">
           <label class="field"><span class="field-label">Units <span class="tooltip" tabindex="0" role="note" data-tooltip="Controls the displayed gel volume unit. The saved plan keeps the canonical fluid-ounce value.">?</span></span><select id="fuel-units"><option value="imperial">Imperial</option><option value="metric">Metric</option></select></label>
           <label id="commercial-name-field" class="field"><span>Base Drink Mix</span><input id="drink-name" type="text" value="Gatorade Thirst Quencher"></label>
-          <label id="commercial-carbs-field" class="field"><span>Carbs per Serving (g)</span><input id="drink-carbs" type="number" min="0" max="100" step="1" value="21" data-slider-max="100"></label>
+          <label id="commercial-carbs-field" class="field"><span>Carbs per Serving Used (g)</span><input id="drink-carbs" type="number" min="0" max="100" step="1" value="21" data-slider-max="100"></label>
+          <label id="commercial-carb-source-field" class="field"><span class="field-label">Carbohydrate Source <span class="tooltip" tabindex="0" role="note" data-tooltip="Select the commercial mix's carbohydrate source. This lets the recipe estimate the complete bottle's glucose-to-fructose balance when the composition is known.">?</span></span><select id="drink-carb-source"><option value="sucrose-dextrose">Sucrose + dextrose (ratio unknown)</option><option value="sucrose">Sucrose / table sugar (1:1)</option><option value="dextrose">Dextrose / glucose only</option><option value="maltodextrin">Maltodextrin / glucose only</option><option value="dual-2-1">Known 2:1 glucose:fructose</option></select></label>
           <label class="field"><span>Fueling Mode</span><select id="fuel-mode"><option value="automatic">Automatic</option><option value="easy">Easy / Recovery</option><option value="endurance">Endurance</option><option value="hard">Hard Training</option><option value="race">Race</option><option value="custom">Custom</option></select></label>
           <label class="field"><span>Custom Carbs per Hour</span><input id="custom-carbs" type="number" min="20" max="120" step="1" value="70" data-slider-min="20" data-slider-max="120"></label>
           <label class="field"><span>Fuel Bottles</span><input id="bottles" type="number" min="0" max="10" step="1" value="2" data-slider-max="10"></label>
@@ -83,11 +96,11 @@
 
       <section id="section-ride-plan" class="card ride-plan-section">
         <header class="section-title"><div class="section-heading"><h2>Ride Plan</h2></div><div class="section-actions"><button type="button" class="icon-button section-link" data-section-link="section-ride-plan" title="Copy link to Ride Plan" aria-label="Copy link to Ride Plan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2"/></svg></button><label class="summary-units">Units <select id="summary-units"><option value="imperial">Imperial</option><option value="metric">Metric</option></select></label><button class="icon-button section-sticky-toggle" type="button" data-sticky-target="section-ride-plan" title="Pin while scrolling" aria-label="Pin while scrolling" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button></div></header>
-        <div id="summary"></div>
+        <div id="summary" class="summary-grid"></div>
       </section>
     </div>
   </main>
-  <footer class="site-footer">Velo Tools is open source software licensed under the <a href="./LICENSE">MIT License</a>.</footer>
+  <footer class="site-footer">&copy; 2026 psychobolt &middot; Licensed under the <a href="./LICENSE">MIT License</a>.</footer>
 </div>
 
   <script src="./scripts/utils/functions.js"></script>

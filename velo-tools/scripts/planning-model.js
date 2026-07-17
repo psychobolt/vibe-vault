@@ -10,13 +10,17 @@ const model = (key) => global.VeloModelConfig.get(key);
 const PLAN_SCHEMA_VERSION = 1;
 
 const PROFILES = [
-  { id: "sprinter", label: "Sprinter", bestPower: "5–15 seconds", shares: [0.72, 0.12, 0.16] },
-  { id: "puncheur", label: "Puncheur", bestPower: "4 minutes", shares: [0.76, 0.19, 0.05] },
-  { id: "breakaway", label: "Breakaway Specialist", bestPower: "5 minutes", shares: [0.8, 0.17, 0.03] },
-  { id: "rouleur", label: "Rouleur", bestPower: "6 minutes", shares: [0.86, 0.12, 0.02] },
-  { id: "gc", label: "GC Specialist", bestPower: "8 minutes", shares: [0.82, 0.16, 0.02] },
-  { id: "climber", label: "Climber", bestPower: "20–40 minutes", shares: [0.8, 0.19, 0.01] },
-  { id: "time-trialist", label: "Time Trialist", bestPower: "40–60+ minutes", shares: [0.91, 0.08, 0.01] },
+  // These reference ratios are deliberately monotonic as focus duration gets
+  // longer: aerobic demand increases while hard-effort and sprint demand fall.
+  // They approximate Xert-like Focus matching; Xert's exact athlete-specific
+  // Focus and Specificity algorithms remain proprietary.
+  { id: "sprinter", label: "Sprinter", bestPower: "5–15 seconds", shares: [0.70, 0.15, 0.15] },
+  { id: "puncheur", label: "Puncheur", bestPower: "4 minutes", shares: [0.86, 0.12, 0.02] },
+  { id: "breakaway", label: "Breakaway Specialist", bestPower: "5 minutes", shares: [0.875, 0.11, 0.015] },
+  { id: "rouleur", label: "Rouleur", bestPower: "6 minutes", shares: [0.89, 0.10, 0.01] },
+  { id: "gc", label: "GC Specialist", bestPower: "8 minutes", shares: [0.905, 0.087, 0.008] },
+  { id: "climber", label: "Climber", bestPower: "20–40 minutes", shares: [0.925, 0.07, 0.005] },
+  { id: "time-trialist", label: "Time Trialist", bestPower: "40–60+ minutes", shares: [0.96, 0.038, 0.002] },
 ];
 
 const RESISTANCE_PRESETS = {
@@ -116,7 +120,7 @@ function createProfilePowerTargets(profileId, thresholdPower, totalDurationMinut
 function createDefaultPlan() {
   return {
     schemaVersion: PLAN_SCHEMA_VERSION,
-    source: { tool: null, fileName: null },
+    source: { tool: null, fileName: null, parameterFileName: null, powerFileName: null },
     units: "imperial",
     athlete: {
       riderWeightKg: 68,
@@ -186,6 +190,12 @@ function normalizePlan(input = {}) {
   plan.resistance.cda = Math.max(0.1, finite(plan.resistance.cda, defaults.resistance.cda));
   plan.resistance.crr = Math.max(0.001, finite(plan.resistance.crr, defaults.resistance.crr));
   for (const key of ["aerobic", "hardEffort", "sprint"]) plan.demand[key] = Math.max(0, finite(plan.demand[key]));
+  // In manual/imported modes the demand components are authoritative and the
+  // profile is descriptive. Recompute it so stale labels saved by older builds
+  // do not override the actual demand composition.
+  if (plan.demand.mode !== "target-duration" && combinedDemand(plan) > 0) {
+    plan.demand.profile = deriveDemandProfile(plan);
+  }
   plan.tape.stemWidthMm = Math.max(15, finite(plan.tape.stemWidthMm, defaults.tape.stemWidthMm));
   plan.tape.maxLengthMm = finite(plan.tape.maxLengthMm) > 0 ? finite(plan.tape.maxLengthMm) : null;
   plan.tape.baseFontSizePt = Math.max(3.5, finite(plan.tape.baseFontSizePt, defaults.tape.baseFontSizePt));
@@ -194,6 +204,7 @@ function normalizePlan(input = {}) {
 }
 
 function normalizePowerTarget(target = {}, index = 0) {
+  const inferredMode = wholeNumber(target.minPower) > 0 && wholeNumber(target.maxPower) > 0 ? "range" : "target";
   return {
     id: String(target.id || `target-${index + 1}`),
     label: String(target.label || "TARGET"),
@@ -201,6 +212,7 @@ function normalizePowerTarget(target = {}, index = 0) {
     minPower: wholeNumber(target.minPower),
     targetPower: wholeNumber(target.targetPower),
     maxPower: wholeNumber(target.maxPower),
+    powerMode: ["target", "range"].includes(target.powerMode) ? target.powerMode : inferredMode,
     cadence: String(target.cadence || ""),
     durationMinutes: Math.max(0, roundTo(finite(target.durationMinutes), 1)),
     durationValue: Math.max(0, roundDurationValue(finite(target.durationValue, target.durationMinutes), target.durationUnit)),
@@ -221,6 +233,11 @@ function elapsedDurationMinutes(plan) {
 }
 
 function targetPower(target) {
+  if (target.powerMode === "range") {
+    if (target.minPower > 0 && target.maxPower > 0) return (target.minPower + target.maxPower) / 2;
+    return target.minPower || target.maxPower || 0;
+  }
+  if (target.powerMode === "target") return target.targetPower > 0 ? target.targetPower : 0;
   if (target.targetPower > 0) return target.targetPower;
   if (target.minPower > 0 && target.maxPower > 0) return (target.minPower + target.maxPower) / 2;
   return target.minPower || target.maxPower || 0;
@@ -236,8 +253,17 @@ function durationWeightedAveragePower(plan) {
 function estimatedWorkload(plan) {
   const threshold = plan.athlete.thresholdPower;
   if (threshold <= 0) return 0;
+  const assignedMinutes = plan.powerTargets.reduce((sum, row) => {
+    return targetPower(row) > 0 ? sum + Math.max(0, row.durationMinutes) : sum;
+  }, 0);
+  // Detailed condition rows sometimes overlap (for example, a climb can also
+  // be a headwind). Scale their combined exposure to the authoritative route
+  // moving duration so workload cannot count the same ride minutes twice.
+  const durationScale = assignedMinutes > 0 && plan.route.movingDurationMinutes > 0
+    ? plan.route.movingDurationMinutes / assignedMinutes
+    : 1;
   return plan.powerTargets.reduce((sum, row) => {
-    const hours = row.durationMinutes / 60;
+    const hours = row.durationMinutes * durationScale / 60;
     return sum + thresholdRelativeWorkload(targetPower(row), threshold, hours);
   }, 0);
 }
@@ -250,6 +276,23 @@ function thresholdRelativeWorkload(averagePower, thresholdPower, hours) {
 
 function combinedDemand(plan) {
   return plan.demand.aerobic + plan.demand.hardEffort + plan.demand.sprint;
+}
+
+// Match the normalized three-system demand allocation to the closest profile
+// reference. Weighting the smaller hard/peak systems prevents the dominant
+// aerobic component from masking a meaningfully punchier demand pattern.
+function deriveDemandProfile(plan) {
+  const total = combinedDemand(plan);
+  if (!(total > 0)) return plan.demand.profile || "rouleur";
+  const allocation = [plan.demand.aerobic, plan.demand.hardEffort, plan.demand.sprint]
+    .map((value) => Math.max(0, finite(value)) / total);
+  const weights = [1, 2, 4];
+  return PROFILES.reduce((best, profile) => {
+    const score = profile.shares.reduce((sum, share, index) => {
+      return sum + weights[index] * Math.pow(allocation[index] - share, 2);
+    }, 0);
+    return score < best.score ? { id: profile.id, score } : best;
+  }, { id: "rouleur", score: Infinity }).id;
 }
 
 // A profile describes how workload is distributed, not an empty set of demand
@@ -316,6 +359,6 @@ global.VeloPlanning = {
   normalizePlan, normalizePowerTarget, totalSystemMassKg, elapsedDurationMinutes,
   targetPower, durationWeightedAveragePower, estimatedWorkload, combinedDemand,
   thresholdRelativeWorkload,
-  applyProfileDemandSuggestions, estimateMechanicalPower, calculateDemandFromTargetDuration, deriveTargetDurationProfile, conversions,
+  deriveDemandProfile, applyProfileDemandSuggestions, estimateMechanicalPower, calculateDemandFromTargetDuration, deriveTargetDurationProfile, conversions,
 };
 })(globalThis);

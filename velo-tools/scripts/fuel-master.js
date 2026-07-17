@@ -1,26 +1,29 @@
-const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSidebar, createPlanStore, createStateStore, downloadJson, protectSummaryActions, readJsonFile, renderSummaryFields, restoreSectionAnchor, setStatus } = VeloApp;
+const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSidebar, createPlanStore, createStateStore, downloadJson, readJsonFile, renderSummaryFields, restoreSectionAnchor, setStatus } = VeloApp;
     const { enhanceNumberSliders, escapeHtml } = VeloUtils;
-    const { calculateDemandFromTargetDuration, combinedDemand, createDefaultPlan, durationWeightedAveragePower, elapsedDurationMinutes, estimatedWorkload, estimateMechanicalPower, normalizePlan, thresholdRelativeWorkload } = VeloPlanning;
+    const { calculateDemandFromTargetDuration, createDefaultPlan, durationWeightedAveragePower, elapsedDurationMinutes, estimateMechanicalPower, normalizePlan, thresholdRelativeWorkload } = VeloPlanning;
     const { renderPlanningUI } = VeloPlanningUI;
     const { parseActivityFile } = VeloActivity;
 
     const elements = {
       planning: document.querySelector("#planning-fields"), summary: document.querySelector("#summary"),
       recipe: document.querySelector("#recipe-plan"),
-      file: document.querySelector("#load-plan"), status: document.querySelector("#status"),
-      authority: document.querySelector("#authority-note"), remove: document.querySelector("#remove-plan"),
-      loadButton: document.querySelector("#load-button"), loadedControl: document.querySelector("#loaded-plan-control"),
-      loadedName: document.querySelector("#loaded-plan-name"),
+      fuelFile: document.querySelector("#load-fuel-parameters"), status: document.querySelector("#status"),
+      authority: document.querySelector("#authority-note"), removeFuel: document.querySelector("#remove-fuel-parameters"),
+      loadFuelButton: document.querySelector("#load-fuel-button"), loadedFuelControl: document.querySelector("#loaded-fuel-control"),
+      loadedFuelName: document.querySelector("#loaded-fuel-name"),
+      powerFile: document.querySelector("#load-power-plan"), loadPowerButton: document.querySelector("#load-power-button"),
+      loadedPowerControl: document.querySelector("#loaded-power-control"), loadedPowerName: document.querySelector("#loaded-power-name"),
+      removePower: document.querySelector("#remove-power-plan"), loadLocalPower: document.querySelector("#load-local-power-plan"),
       parameterActions: document.querySelector("#parameter-actions"),
     };
     attachToolSidebar("fuel");
     attachSectionLinks();
     attachSectionPins();
     attachStickyActions(elements.parameterActions);
-    protectSummaryActions();
     const fuelDefaults = {
       mode: "automatic", customCarbs: 70, bottles: 2, bottleCapacity: 90, gelSizeOz: 5, maxGelStop: 45,
       gelFlasks: 1, waterFlasks: 1, drinkName: "Gatorade Thirst Quencher", drinkCarbs: 21,
+      drinkCarbSource: "sucrose-dextrose",
       haveMalto: true, haveFructose: true, haveGatorade: true, havePectin: true, haveSalt: true,
       spoons: { tablespoon: true, one: true, half: true, quarter: true, eighth: true, third: true }
     };
@@ -38,20 +41,21 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
     const histories = Object.fromEntries(["athlete", "route", "resistance", "demand"].map((id) => [id, { undo: [], redo: [] }]));
     const fuelHistories = { fueling: { undo: [], redo: [] }, spoons: { undo: [], redo: [] } };
     const loadedBaselineKey = "velo-tools:fuel-master:loaded-baseline";
+    const sharedPowerPlanKey = "velo-tools:latest-power-plan";
     let loadedBaseline = readLoadedBaseline();
 
     function readLoadedBaseline() {
       try {
         const saved = JSON.parse(localStorage.getItem(loadedBaselineKey) || "null");
-        return saved ? { plan: normalizePlan(saved.plan), fuel: { ...fuelDefaults, ...(saved.fuel || {}) } } : null;
+        return saved ? { plan: normalizePlan(saved.plan), fuel: { ...fuelDefaults, ...(saved.fuel || {}) }, fileName: saved.fileName || saved.plan?.source?.parameterFileName || saved.plan?.source?.fileName || "fuel-master-plan.json" } : null;
       } catch {
         localStorage.removeItem(loadedBaselineKey);
         return null;
       }
     }
 
-    function setLoadedBaseline(plan, fuelSettings = fuel) {
-      loadedBaseline = plan ? { plan: normalizePlan(structuredClone(plan)), fuel: { ...fuelDefaults, ...fuelSettings } } : null;
+    function setLoadedBaseline(plan, fuelSettings = fuel, fileName = null) {
+      loadedBaseline = plan ? { plan: normalizePlan(structuredClone(plan)), fuel: { ...fuelDefaults, ...fuelSettings }, fileName: fileName || plan.source.parameterFileName || "fuel-master-plan.json" } : null;
       if (loadedBaseline) localStorage.setItem(loadedBaselineKey, JSON.stringify(loadedBaseline));
       else localStorage.removeItem(loadedBaselineKey);
     }
@@ -130,49 +134,27 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
 
     function isPowerMasterPlan(plan) { return plan.source.tool === "power-master" && plan.powerTargets.length > 0; }
 
-    // Detailed Power Master rows are the execution authority. Their measured workload
-    // becomes Fuel Master's demand baseline while the imported plan remains read-only.
-    function syncImportedPowerDemand(plan) {
-      if (!plan.powerTargets.length || plan.athlete.thresholdPower <= 0) return;
-      const workload = estimatedWorkload(plan);
-      const currentDemand = combinedDemand(plan);
-      const totalMinutes = plan.powerTargets.reduce((sum, row) => sum + row.durationMinutes, 0);
-      const climbMinutes = plan.powerTargets.reduce((sum, row) => sum + (/climb|steep|incline/i.test(row.terrain) ? row.durationMinutes : 0), 0);
-      const climbShare = totalMinutes > 0 ? climbMinutes / totalMinutes : 0;
-      const averagePower = durationWeightedAveragePower(plan);
-      const intensity = averagePower / plan.athlete.thresholdPower;
-      plan.demand.profile = climbShare >= .25 ? "climber" : climbShare >= .2 ? "gc" : climbShare < .08 && intensity >= .88 ? "time-trialist" : "rouleur";
-      plan.demand.difficulty = intensity >= VeloModelConfig.get("profile.targetDurationClassification").difficultIntensityMin ? "difficult" : "moderate";
-      if (currentDemand > 0) {
-        const scale = workload / currentDemand;
-        plan.demand.aerobic *= scale;
-        plan.demand.hardEffort *= scale;
-        plan.demand.sprint *= scale;
-      } else {
-        plan.demand.aerobic = workload;
-        plan.demand.hardEffort = 0;
-        plan.demand.sprint = 0;
-      }
-      plan.demand.mode = "imported";
+    function readLocalPowerPlan() {
+      try {
+        const saved = localStorage.getItem(sharedPowerPlanKey);
+        const plan = saved ? normalizePlan(JSON.parse(saved)) : null;
+        return plan?.powerTargets?.length ? plan : null;
+      } catch { return null; }
     }
 
-    function adjustDemandRatio(factor) {
-      const plan = store.get();
-      if (!(combinedDemand(plan) > 0)) return;
-      remember("demand");
-      for (const key of ["aerobic", "hardEffort", "sprint"]) plan.demand[key] *= factor;
-      store.set(plan);
-      setStatus(elements.status, `${factor > 1 ? "Increased" : "Decreased"} combined demand by 1%.`);
-    }
-
-    function fitDemandToPowerPlan() {
-      const plan = store.get();
-      if (!plan.powerTargets.length) return;
-      remember("demand");
-      syncImportedPowerDemand(plan);
-      store.set(plan);
-      const profile = VeloPlanning.PROFILES.find((item) => item.id === plan.demand.profile)?.label || "best matching profile";
-      setStatus(elements.status, `Fitted demand to the power plan and selected ${profile}.`);
+    function applyPowerPlan(imported, label) {
+      const next = normalizePlan(imported);
+      if (!next.powerTargets.length) throw new Error("The selected file does not contain Power Master targets.");
+      next.source = {
+        ...next.source,
+        tool: "power-master",
+        fileName: label,
+        powerFileName: label,
+        parameterFileName: store.get().source.parameterFileName || null,
+      };
+      clearHistories();
+      store.set(next);
+      setStatus(elements.status, `Loaded ${label}. Imported demand is retained and Steps 1–4 are locked.`);
     }
 
     function render(plan) {
@@ -211,11 +193,15 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
         },
       });
       elements.authority.hidden = !locked;
-      elements.authority.textContent = locked ? `Power Master owns Steps 1–4${plan.source.fileName ? ` through ${plan.source.fileName}` : ""}. Remove the plan to edit them here.` : "";
-      const hasLoadedFile = Boolean(loadedBaseline && plan.source.fileName);
-      elements.loadButton.hidden = hasLoadedFile;
-      elements.loadedControl.hidden = !hasLoadedFile;
-      elements.loadedName.value = hasLoadedFile ? plan.source.fileName : "";
+      elements.authority.textContent = locked ? `Power Master owns Steps 1–4${plan.source.powerFileName || plan.source.fileName ? ` through ${plan.source.powerFileName || plan.source.fileName}` : ""}. Remove the power plan to edit them here.` : "";
+      const hasFuelFile = Boolean(loadedBaseline?.fileName);
+      elements.loadFuelButton.hidden = hasFuelFile;
+      elements.loadedFuelControl.hidden = !hasFuelFile;
+      elements.loadedFuelName.value = hasFuelFile ? loadedBaseline.fileName : "";
+      elements.loadPowerButton.hidden = locked;
+      elements.loadedPowerControl.hidden = !locked;
+      elements.loadedPowerName.value = locked ? (plan.source.powerFileName || plan.source.fileName || "Local Power Master plan") : "";
+      elements.loadLocalPower.hidden = !readLocalPowerPlan();
       renderFuelFields();
       renderSummary(plan);
     }
@@ -225,6 +211,7 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
       document.querySelector("#fuel-units").value = imperial ? "imperial" : "metric";
       document.querySelector("#drink-name").value = fuel.drinkName;
       document.querySelector("#drink-carbs").value = fuel.drinkCarbs;
+      document.querySelector("#drink-carb-source").value = fuel.drinkCarbSource || fuelDefaults.drinkCarbSource;
       document.querySelector("#fuel-mode").value = fuel.mode;
       document.querySelector("#custom-carbs").value = fuel.customCarbs;
       document.querySelector("#custom-carbs").disabled = fuel.mode !== "custom";
@@ -240,6 +227,7 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
       document.querySelector("#have-gatorade").checked = fuel.haveGatorade !== false;
       document.querySelector("#commercial-name-field").hidden = fuel.haveGatorade === false;
       document.querySelector("#commercial-carbs-field").hidden = fuel.haveGatorade === false;
+      document.querySelector("#commercial-carb-source-field").hidden = fuel.haveGatorade === false;
       document.querySelector("#have-pectin").checked = fuel.havePectin !== false;
       document.querySelector("#have-salt").checked = fuel.haveSalt !== false;
       document.querySelector("#spoon-1").checked = fuel.spoons?.one !== false;
@@ -296,21 +284,63 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
       // Keep small powder amounts in total teaspoons (for example 1 tbsp + 1/4 tsp → 3 1/4 tsp).
       if (value < 1.5) return formatSpoonAmount(value * 3);
       const tbsp = Math.floor(value);
-      const tsp = Math.round((value - tbsp) * 4) / 4;
+      const tsp = Math.round((value - tbsp) * 3 * 4) / 4;
       return `${tbsp ? `${tbsp} tbsp` : ""}${tsp ? `${tbsp ? " + " : ""}${formatSpoonAmount(tsp)}` : ""}`.trim();
+    }
+
+    const commercialCarbSources = {
+      "sucrose-dextrose": {
+        glucoseFraction: null,
+        description: "sucrose + dextrose; exact glucose:fructose ratio unknown",
+      },
+      sucrose: { glucoseFraction: 0.5, description: "sucrose; 1:1 glucose:fructose equivalent" },
+      dextrose: { glucoseFraction: 1, description: "dextrose/glucose; glucose only" },
+      maltodextrin: { glucoseFraction: 1, description: "maltodextrin; glucose only" },
+      "dual-2-1": { glucoseFraction: 2 / 3, description: "known 2:1 glucose:fructose" },
+    };
+
+    function bottleCarbSplit(baseCarbs, supplementalCarbs) {
+      const source = commercialCarbSources[fuel.drinkCarbSource] || commercialCarbSources["sucrose-dextrose"];
+      if (source.glucoseFraction == null) {
+        return { source, maltoCarbs: supplementalCarbs * 2 / 3, fructoseCarbs: supplementalCarbs / 3, exact: false, ratio: null };
+      }
+      // Solve the supplemental glucose and fructose amounts against the known
+      // commercial-base composition so the complete bottle—not merely the
+      // powder added afterward—targets a 2:1 glucose:fructose equivalent.
+      const idealFructose = (supplementalCarbs + baseCarbs * (3 * source.glucoseFraction - 2)) / 3;
+      const fructoseCarbs = Math.max(0, Math.min(supplementalCarbs, idealFructose));
+      const maltoCarbs = supplementalCarbs - fructoseCarbs;
+      const glucoseTotal = baseCarbs * source.glucoseFraction + maltoCarbs;
+      const fructoseTotal = baseCarbs * (1 - source.glucoseFraction) + fructoseCarbs;
+      return {
+        source,
+        maltoCarbs,
+        fructoseCarbs,
+        exact: Math.abs(fructoseCarbs - idealFructose) < 0.01,
+        ratio: fructoseTotal > 0 ? glucoseTotal / fructoseTotal : Infinity,
+      };
     }
 
     function renderRecipe(plan, values) {
       const { bottleShare, gelCarbs, gelFlasks, gelStops, gelPerFlask, gelPerStop, gelLiquidOz, gelLiquidPerStopOz, waterRecommended } = values;
       const bottleCount = Math.max(1, Math.floor(Number(fuel.bottles) || 1));
       const perBottle = bottleShare / bottleCount;
-      const baseCarbs = fuel.haveGatorade ? Math.max(0, Number(fuel.drinkCarbs) || 0) : 0;
+      const configuredBaseCarbs = fuel.haveGatorade ? Math.max(0, Number(fuel.drinkCarbs) || 0) : 0;
+      const baseCarbs = Math.min(perBottle, configuredBaseCarbs);
+      const baseServings = configuredBaseCarbs > 0 ? baseCarbs / configuredBaseCarbs : 0;
       const remaining = Math.max(0, perBottle - baseCarbs);
+      const carbSplit = bottleCarbSplit(baseCarbs, remaining);
       const bottleIngredients = document.querySelector("#bottle-ingredients");
       bottleIngredients.innerHTML = "";
-      if (fuel.haveGatorade && baseCarbs > 0) bottleIngredients.insertAdjacentHTML("beforeend", `<li>${escapeHtml(fuel.drinkName)}: 1 serving (${baseCarbs.toFixed(0)}g carbs).</li>`);
-      if (remaining > 0 && fuel.haveMalto && fuel.haveFructose) bottleIngredients.insertAdjacentHTML("beforeend", `<li>${formatPowder(remaining * .65 / 8)} maltodextrin.</li><li>${formatPowder(remaining * .35 / 12)} pure fructose.</li>`);
+      if (fuel.haveGatorade && baseCarbs > 0) bottleIngredients.insertAdjacentHTML("beforeend", `<li>${escapeHtml(fuel.drinkName)}: ${baseServings >= .995 ? "1 entered serving" : `${baseServings.toFixed(2)} serving`} (${baseCarbs.toFixed(0)}g carbs; ${carbSplit.source.description}).</li>`);
+      if (remaining > 0 && fuel.haveMalto && fuel.haveFructose) {
+        bottleIngredients.insertAdjacentHTML("beforeend", `<li>${formatPowder(carbSplit.maltoCarbs / 8)} maltodextrin.</li><li>${formatPowder(carbSplit.fructoseCarbs / 12)} pure fructose.</li>`);
+        if (baseCarbs > 0 && carbSplit.source.glucoseFraction == null) bottleIngredients.insertAdjacentHTML("beforeend", `<li class="recipe-warning"><strong>Ratio note:</strong> Sucrose supplies equal glucose and fructose, but added dextrose supplies more glucose. Because the commercial mix does not disclose their amounts, the complete bottle ratio cannot be verified; the supplemental powder alone is 2:1.</li>`);
+        else if (baseCarbs > 0 && !carbSplit.exact) bottleIngredients.insertAdjacentHTML("beforeend", `<li class="recipe-warning"><strong>Ratio note:</strong> The selected base cannot reach exactly 2:1 within this bottle target. The closest available mix is about ${Number.isFinite(carbSplit.ratio) ? `${carbSplit.ratio.toFixed(2)}:1` : "glucose only"}.</li>`);
+        else if (baseCarbs > 0) bottleIngredients.insertAdjacentHTML("beforeend", `<li><strong>Ratio:</strong> The complete bottle targets 2:1 glucose:fructose equivalent.</li>`);
+      }
       else if (remaining > 0) bottleIngredients.insertAdjacentHTML("beforeend", `<li>${formatPowder(remaining / 12)} sugar powder.</li>`);
+      if (baseCarbs > 0 && remaining <= 0 && carbSplit.source.glucoseFraction == null) bottleIngredients.insertAdjacentHTML("beforeend", `<li class="recipe-warning"><strong>Ratio note:</strong> The commercial mix contains sucrose and dextrose, so its exact glucose:fructose ratio is not known.</li>`);
       if (fuel.haveSalt) bottleIngredients.insertAdjacentHTML("beforeend", `<li>${formatSpoonAmount(.25)} electrolyte salt.</li>`);
       document.querySelector("#bottle-badge").textContent = `${bottleCount} bottle${bottleCount === 1 ? "" : "s"} · ${Math.round(perBottle)}g each`;
       document.querySelector("#bottle-recipe-card").hidden = bottleShare <= 0;
@@ -360,18 +390,12 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
       const gelStops = gelCarbs ? Math.ceil(gelCarbs / fuel.maxGelStop) : 0;
       const avg = durationWeightedAveragePower(plan) || estimateMechanicalPower(plan);
       const movingHours = plan.route.movingDurationMinutes / 60;
-      const workload = plan.powerTargets.length ? estimatedWorkload(plan) : thresholdRelativeWorkload(avg, plan.athlete.thresholdPower, movingHours);
+      const importedPowerPlan = isPowerMasterPlan(plan);
+      const workload = importedPowerPlan ? null : thresholdRelativeWorkload(avg, plan.athlete.thresholdPower, movingHours);
       const speedKmh = plan.route.movingDurationMinutes > 0 ? plan.route.distanceKm / (plan.route.movingDurationMinutes / 60) : 0;
       const speed = plan.units === "imperial" ? speedKmh * 0.6213711922 : speedKmh;
-      const alignment = combinedDemand(plan) > 0 ? ((workload - combinedDemand(plan)) / combinedDemand(plan)) * 100 : null;
-      const servingsPerBottle = fuel.drinkCarbs > 0 ? Math.ceil(Math.min(total / Math.max(1, fuel.bottles), fuel.bottleCapacity) / fuel.drinkCarbs) : 0;
-      const importedPowerPlan = isPowerMasterPlan(plan);
-      const alignmentTone = alignment == null || Math.abs(alignment) < 1 ? "aligned" : alignment > 0 ? "positive" : "negative";
-      const alignmentActions = combinedDemand(plan) > 0 ? [
-        { action: "demand-minus", label: "Decrease combined demand by 1%", text: "−" },
-        { action: "demand-plus", label: "Increase combined demand by 1%", text: "+" },
-        plan.powerTargets.length && { action: "demand-fit", label: "Fit demand and best profile to the power plan", text: "⌈", kind: "fit" },
-      ].filter(Boolean) : [];
+      const perBottleCarbs = fuel.bottles > 0 ? bottleCarbs / fuel.bottles : 0;
+      const commercialServingsPerBottle = fuel.haveGatorade && fuel.drinkCarbs > 0 ? Math.min(1, perBottleCarbs / fuel.drinkCarbs) : 0;
       renderSummaryFields(elements.summary, [
         !importedPowerPlan && { label: "Moving duration", value: `${plan.route.movingDurationMinutes.toFixed(1)} min`, tooltip: "Planned time in motion, used for workload calculations." },
         !importedPowerPlan && { label: "Elapsed duration", value: `${elapsedDurationMinutes(plan).toFixed(1)} min`, tooltip: "Moving duration plus stopped duration, used for the total fueling requirement." },
@@ -379,35 +403,30 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
         !importedPowerPlan && { label: "Weighted average power", value: `${Math.round(avg)} W`, tooltip: "Average mechanical power weighted by target duration, or the route-physics estimate when no detailed targets exist." },
         { label: "Power plan", value: plan.powerTargets.length ? `${plan.powerTargets.length} target rows` : "Route estimate", tooltip: "Shows whether fueling is based on detailed Power Master targets or Fuel Master's route estimate." },
         !importedPowerPlan && { label: "Estimated IF", value: plan.athlete.thresholdPower ? (avg / plan.athlete.thresholdPower).toFixed(2) : "—", tooltip: "Average power divided by threshold power; this is not normalized-power IF." },
-        { label: "Workload", value: workload.toFixed(1), tooltip: "Simplified threshold-relative work used to connect the execution plan to fueling intensity." },
-        { label: "Demand alignment", value: alignment == null ? "—" : `${alignment >= 0 ? "+" : ""}${alignment.toFixed(1)}%`, tooltip: "Difference between estimated workload and combined demand. Within one percent is considered aligned.", tone: alignmentTone, actions: alignmentActions },
+        !importedPowerPlan && { label: "Workload", value: workload.toFixed(1), tooltip: "Simplified threshold-relative work from Fuel Master's route estimate. Power Master owns detailed target workload and demand alignment." },
         { label: "Fuel target", value: `${rate} g/hr`, tooltip: "Recommended hourly carbohydrate intake from intensity, demand, duration, and fueling mode." },
         { label: "Ride total", value: `${total} g`, tooltip: "Fuel target multiplied by elapsed ride duration." },
         { label: "Bottles", value: `${Math.round(bottleCarbs)} g across ${fuel.bottles}`, tooltip: "Total carbohydrate assigned to the selected number of fuel bottles." },
         { label: "Gel", value: `${Math.round(gelCarbs)} g · ${gelFlasks} flask(s) · ${gelStops} stop(s)`, tooltip: "Remaining carbohydrate assigned to gel, including calculated flask and consumption-stop counts." },
       ]);
-      elements.summary.querySelectorAll("[data-summary-action]").forEach((button) => button.addEventListener("click", () => {
-        if (button.dataset.summaryAction === "demand-minus") adjustDemandRatio(.99);
-        if (button.dataset.summaryAction === "demand-plus") adjustDemandRatio(1.01);
-        if (button.dataset.summaryAction === "demand-fit") fitDemandToPowerPlan();
-      }));
       const bottleShare = fuel.bottles > 0 ? Math.min(total, fuel.bottles * fuel.bottleCapacity) : 0;
       const gelPerFlask = gelFlasks > 0 ? gelCarbs / gelFlasks : 0;
       const gelPerStop = gelStops > 0 ? gelCarbs / gelStops : 0;
       elements.recipe.innerHTML = `
         <div class="recipe-item"><strong>Carry</strong><span>${fuel.bottles} fuel bottle(s)${gelFlasks ? ` + ${Math.max(1, Number(fuel.gelFlasks) || 1)} gel flask(s)` : ""} + ${Math.max(0, Number(fuel.waterFlasks) || 0)} water flask(s)</span></div>
-        <div class="recipe-item"><strong>Bottle mix</strong><span>${Math.round(bottleShare)}g total · ${fuel.bottles ? Math.round(bottleShare / Math.max(1, fuel.bottles)) : 0}g per bottle${fuel.drinkCarbs > 0 ? ` · about ${servingsPerBottle} ${escapeHtml(fuel.drinkName)} serving(s)` : ""}</span></div>
+        <div class="recipe-item"><strong>Bottle mix</strong><span>${Math.round(bottleShare)}g total · ${fuel.bottles ? Math.round(bottleShare / Math.max(1, fuel.bottles)) : 0}g per bottle${commercialServingsPerBottle > 0 ? ` · ${commercialServingsPerBottle >= .995 ? "1" : commercialServingsPerBottle.toFixed(2)} ${escapeHtml(fuel.drinkName)} scoop / serving per bottle` : ""}</span></div>
         <div class="recipe-item"><strong>Gel mix</strong><span>${Math.round(gelCarbs)}g total${gelFlasks ? ` · ${Math.round(gelPerFlask)}g per flask` : ""}${gelStops ? ` · ${Math.round(gelPerStop)}g per stop` : ""}</span></div>
         <div class="recipe-item"><strong>Water note</strong><span>${gelPerStop > gelSettings.waterRecommendedAboveGrams ? "Drink water with each gel serving." : "Carry water separately and drink to thirst."}</span></div>`;
       const gelLiquidOz = Math.max(gelSettings.minimumLiquidOz, gelCarbs * gelSettings.liquidOzPerGram, gelStops * gelSettings.minimumLiquidOzPerStop);
       renderRecipe(plan, { bottleShare, gelCarbs, gelFlasks, gelStops, gelPerFlask, gelPerStop, gelLiquidOz, gelLiquidPerStopOz: gelStops ? gelLiquidOz / gelStops : 0, waterRecommended: gelPerStop > gelSettings.waterRecommendedAboveGrams });
     }
 
-    document.querySelectorAll("#drink-name,#drink-carbs,#fuel-mode,#custom-carbs,#bottles,#bottle-capacity,#gel-size,#gel-flasks,#water-flasks,#gel-stop,#have-malto,#have-fructose,#have-gatorade,#have-pectin,#have-salt,#spoon-tablespoon,#spoon-1,#spoon-half,#spoon-quarter,#spoon-eighth,#spoon-third").forEach((input) => input.addEventListener("input", () => {
+    document.querySelectorAll("#drink-name,#drink-carbs,#drink-carb-source,#fuel-mode,#custom-carbs,#bottles,#bottle-capacity,#gel-size,#gel-flasks,#water-flasks,#gel-stop,#have-malto,#have-fructose,#have-gatorade,#have-pectin,#have-salt,#spoon-tablespoon,#spoon-1,#spoon-half,#spoon-quarter,#spoon-eighth,#spoon-third").forEach((input) => input.addEventListener("input", () => {
       rememberFuel(input.id.startsWith("spoon-") ? "spoons" : "fueling");
       fuel = {
         drinkName: document.querySelector("#drink-name").value.trim() || fuelDefaults.drinkName,
         drinkCarbs: Number(document.querySelector("#drink-carbs").value) || 0,
+        drinkCarbSource: document.querySelector("#drink-carb-source").value,
         mode: document.querySelector("#fuel-mode").value,
         customCarbs: Number(document.querySelector("#custom-carbs").value),
         bottles: Number(document.querySelector("#bottles").value),
@@ -448,7 +467,12 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
     });
     document.querySelector("#save-recipe").addEventListener("click", () => {
       renderSummary(store.get());
-      const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fuel Master Recipe</title><style>body{font:16px/1.5 Arial,sans-serif;max-width:820px;margin:auto;padding:24px;color:#263238}h1,h2,h3{color:#1a237e}.equipment-card,.recipe-card{padding:16px;margin:0 0 16px;border:1px solid #cfd8dc;border-radius:8px;background:#fff}.equipment-card{background:#fffde7}li{margin:.4rem 0}.target-badge{float:right;font-size:12px;background:#ffebee;color:#b71c1c;padding:3px 7px;border-radius:4px}</style></head><body><h1>Fuel Master Recipe</h1>${document.querySelector("#recipe-export-content").innerHTML}</body></html>`;
+      const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fuel Master Recipe</title><style>
+        *{box-sizing:border-box}body{font:16px/1.5 Arial,sans-serif;max-width:820px;margin:auto;padding:24px;color:#263238;background:#f4f7f8}h1,h2,h3{color:#1a237e}
+        .equipment-card,.recipe-card,.recipe-plan{padding:16px;margin:0 0 16px;border:1px solid #cfd8dc;border-radius:8px;background:#fff}.equipment-card{background:#fffde7}
+        .recipe-plan{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.recipe-item{display:grid;gap:4px;padding:12px 14px;border-left:4px solid #6a1b9a;border-radius:6px;color:#455a64;background:#f5f0fa}.recipe-item strong{color:#4a148c;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+        li{margin:.4rem 0}.recipe-warning{padding:8px 10px;border-left:4px solid #f9a825;border-radius:5px;color:#6d4c00;background:#fff8e1;font-weight:700}.target-badge{float:right;font-size:12px;background:#ffebee;color:#b71c1c;padding:3px 7px;border-radius:4px}@media(max-width:560px){body{padding:14px}.recipe-plan{grid-template-columns:1fr}}
+      </style></head><body><h1>Fuel Master Recipe</h1>${document.querySelector("#recipe-export-content").innerHTML}</body></html>`;
       const link = document.createElement("a");
       link.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
       link.download = "fuel-master-recipe.html";
@@ -467,38 +491,66 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
       plan.units = event.target.value;
       store.set(plan);
     });
-    elements.loadButton.addEventListener("click", () => elements.file.click());
-    elements.loadedName.addEventListener("click", () => elements.file.click());
-    elements.file.addEventListener("change", async () => {
+    elements.loadFuelButton.addEventListener("click", () => elements.fuelFile.click());
+    elements.loadedFuelName.addEventListener("click", () => elements.fuelFile.click());
+    elements.fuelFile.addEventListener("change", async () => {
       try {
-        const file = elements.file.files[0];
+        const file = elements.fuelFile.files[0];
         const plan = await readJsonFile(file);
         const raw = JSON.parse(await file.text());
         if (raw.fueling) {
           fuel = { ...fuelDefaults, ...raw.fueling };
           persistFuel();
         }
-        plan.source = { ...plan.source, tool: plan.powerTargets.length ? "power-master" : "fuel-master", fileName: file.name };
-        if (plan.powerTargets.length) syncImportedPowerDemand(plan);
-        setLoadedBaseline(plan, fuel);
+        plan.source = { ...plan.source, tool: plan.powerTargets.length ? "power-master" : "fuel-master", parameterFileName: file.name };
+        if (plan.powerTargets.length) {
+          plan.source.powerFileName ||= plan.source.fileName || `Embedded in ${file.name}`;
+          plan.source.fileName = plan.source.powerFileName;
+        }
+        setLoadedBaseline(plan, fuel, file.name);
         clearHistories();
         store.set(plan);
         setStatus(elements.status, plan.powerTargets.length ? `Loaded ${file.name}. Shared planning fields are locked.` : `Loaded ${file.name}.`);
       } catch (error) { setStatus(elements.status, error.message, "error"); }
-      elements.file.value = "";
+      elements.fuelFile.value = "";
     });
     document.querySelector("#save-button").addEventListener("click", () => {
       downloadJson("fuel-master-plan.json", { ...store.get(), fueling: fuel });
     });
-    elements.remove.addEventListener("click", () => {
+    elements.removeFuel.addEventListener("click", () => {
       const plan = store.get();
       setLoadedBaseline(null);
-      plan.source = { tool: "fuel-master", fileName: null };
-      plan.powerTargets = [];
-      plan.demand.mode = "manual";
-      elements.file.value = "";
+      plan.source.parameterFileName = null;
+      elements.fuelFile.value = "";
       store.set(plan);
-      setStatus(elements.status, "Loaded parameter file removed; current planning values are retained.");
+      setStatus(elements.status, "Loaded fuel parameter file removed; current values are retained.");
+    });
+
+    elements.loadPowerButton.addEventListener("click", () => elements.powerFile.click());
+    elements.loadedPowerName.addEventListener("click", () => elements.powerFile.click());
+    elements.powerFile.addEventListener("change", async () => {
+      try {
+        const file = elements.powerFile.files[0];
+        applyPowerPlan(await readJsonFile(file), file.name);
+      } catch (error) { setStatus(elements.status, error.message, "error"); }
+      elements.powerFile.value = "";
+    });
+    elements.loadLocalPower.addEventListener("click", () => {
+      try {
+        const localPlan = readLocalPowerPlan();
+        if (!localPlan) throw new Error("No local Power Master plan is available yet.");
+        applyPowerPlan(localPlan, "Latest local Power Master plan");
+      } catch (error) { setStatus(elements.status, error.message, "error"); }
+    });
+    elements.removePower.addEventListener("click", () => {
+      const plan = store.get();
+      plan.powerTargets = [];
+      plan.source = { ...plan.source, tool: "fuel-master", fileName: null, powerFileName: null };
+      plan.demand.mode = "manual";
+      elements.powerFile.value = "";
+      clearHistories();
+      store.set(plan);
+      setStatus(elements.status, "Power parameters removed; Steps 1–4 are editable.");
     });
     document.querySelector("#reset-button").addEventListener("click", () => {
       const resetToFile = Boolean(loadedBaseline);
@@ -507,13 +559,19 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
       persistFuel();
       clearHistories();
       store.set(resetToFile ? structuredClone(loadedBaseline.plan) : initial);
-      setStatus(elements.status, resetToFile ? `Restored ${loadedBaseline.plan.source.fileName}.` : "Fuel Master reset to defaults.");
+      setStatus(elements.status, resetToFile ? `Restored ${loadedBaseline.fileName}.` : "Fuel Master reset to defaults.");
     });
 
     store.subscribe(render);
     if (!store.loadLocal()) render(initial);
-    else if (!loadedBaseline && store.get().source.fileName) {
-      setLoadedBaseline(store.get(), fuel);
-      render(store.get());
+    const handoffRequested = new URLSearchParams(location.search).get("use_local_power") === "1"
+      || sessionStorage.getItem("velo-tools:power-handoff") === "1";
+    if (handoffRequested) {
+      const localPlan = readLocalPowerPlan();
+      if (localPlan) {
+        applyPowerPlan(localPlan, "Latest local Power Master plan");
+        sessionStorage.removeItem("velo-tools:power-handoff");
+      }
+      history.replaceState(null, "", location.pathname + location.hash);
     }
     restoreSectionAnchor();

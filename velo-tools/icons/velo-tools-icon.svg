@@ -4,7 +4,6 @@
   <rect width="64" height="64" rx="15" fill="url(#road)"/>
   <circle cx="16" cy="45" r="10" fill="none" stroke="#80deea" stroke-width="3.2"/>
   <circle cx="48" cy="45" r="10" fill="none" stroke="#ffb300" stroke-width="3.2"/>
-  <!-- Centered aero road geometry: high saddle, long top tube, and low cockpit. -->
   <path d="M16 45 26 27 31 45H16Zm10-18 17 4-12 14m12-14 5 14" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="m26 27-2-7m-5 0h10m14 11 1-4 6-1h3m-1 0v5c0 2-1 3-3 3h-1" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="31" cy="45" r="3" fill="#ffb300" stroke="#fff" stroke-width="1.2"/>

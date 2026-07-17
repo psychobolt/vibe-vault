@@ -113,6 +113,7 @@ function migratePacingPlan(raw, fileName) {
         minPower: power?.min ?? row.minPower ?? row.min ?? 0,
         targetPower: power?.target ?? row.targetPower ?? row.target ?? 0,
         maxPower: power?.max ?? row.maxPower ?? row.max ?? 0,
+        powerMode: row.powerMode || ((power?.min ?? row.minPower ?? row.min) > 0 && (power?.max ?? row.maxPower ?? row.max) > 0 ? "range" : "target"),
         cadence: cadence(row.cadence), durationMinutes: minutes,
         durationValue: Number.isFinite(value) ? value : minutes, durationUnit: ["seconds", "minutes", "hours"].includes(unit) ? unit : "minutes",
         textColor: row.style?.textColor || row.textColor || row.color || "#455a64",
@@ -597,12 +598,17 @@ function attachFloatingCard(target, dock) {
     };
     target.addEventListener("mousemove", (event) => {
       if (event.buttons) return;
+      if (event.target.closest("button, a, input, select, textarea, label")) {
+        target.style.cursor = "";
+        return;
+      }
       const edges = edgeAt(event);
       target.style.cursor = !edges ? "" : (edges.left && edges.top) || (edges.right && edges.bottom) ? "nwse-resize" : (edges.right && edges.top) || (edges.left && edges.bottom) ? "nesw-resize" : edges.left || edges.right ? "ew-resize" : edges.top || edges.bottom ? "ns-resize" : "";
     });
     target.addEventListener("mouseleave", () => { if (!target.dataset.isEdgeResizing) target.style.cursor = ""; });
     target.addEventListener("mousedown", (event) => {
       if (event.button !== 0) return;
+      if (event.target.closest("button, a, input, select, textarea, label")) return;
       const edges = edgeAt(event);
       if (!edges || !Object.values(edges).some(Boolean)) return;
       event.preventDefault();
@@ -776,7 +782,7 @@ function attachToolSidebar(currentTool) {
     <div class="tool-sidebar-links">
       <a href="./index.html" title="Home">${icons.home}<span>Home</span></a>
       <a href="./power-master.html" title="Power Master" ${currentTool === "power" ? 'class="is-current" aria-current="page"' : ""}>${icons.power}<span>${labels.power}</span></a>
-      <a href="./fuel-master.html" title="Fuel Master" ${currentTool === "fuel" ? 'class="is-current" aria-current="page"' : ""}>${icons.fuel}<span>${labels.fuel}</span></a>
+      <a href="./fuel-master.html${currentTool === "power" ? "?use_local_power=1" : ""}" title="Fuel Master" ${currentTool === "fuel" ? 'class="is-current" aria-current="page"' : ""}>${icons.fuel}<span>${labels.fuel}</span></a>
     </div>`;
   const toggle = sidebar.querySelector(".tool-sidebar-toggle");
   const storageKey = `velo-sidebar:${global.location.pathname}`;
@@ -791,6 +797,11 @@ function attachToolSidebar(currentTool) {
     if (sidebar.dataset.justDragged) return;
     toggleExpanded();
   });
+  if (currentTool === "power") {
+    sidebar.querySelector('a[title="Fuel Master"]')?.addEventListener("click", () => {
+      global.sessionStorage.setItem("velo-tools:power-handoff", "1");
+    });
+  }
   global.document.body.appendChild(sidebar);
 
   // The compact desktop rail can be parked near the current work area. Mobile

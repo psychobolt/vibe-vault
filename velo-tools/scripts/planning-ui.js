@@ -1,7 +1,7 @@
 // Reusable Steps 1–4 UI. Kept as a classic script for direct file:// use.
 (function (global) {
 "use strict";
-const { PROFILES, RESISTANCE_PRESETS, applyProfileDemandSuggestions } = global.VeloPlanning;
+const { PROFILES, RESISTANCE_PRESETS, applyProfileDemandSuggestions, deriveDemandProfile } = global.VeloPlanning;
 const { conversions } = global.VeloMath;
 const { enhanceNumberSliders } = global.VeloUtils;
 const { attachSectionLinks, attachSectionPins, protectSummaryActions } = global.VeloApp;
@@ -69,7 +69,7 @@ function renderPlanningUI(root, plan, {
     ${section("demand", "4", "Demand and Profile", `
       <div class="field-grid field-grid--six">
         ${selectField("Planning Mode", "demand.mode", [["target-duration", "Meet Target Duration"], ["imported", "Use Imported Demand"], ["manual", "Manual Demand"]], plan.demand.mode, disabled, "Choose whether demand is estimated from route and target duration, supplied by imported parameters, or entered manually.")}
-        ${selectField("Profile", "demand.profile", PROFILES.map((profile) => [profile.id, `${profile.label} (${profile.bestPower})`]), plan.demand.profile, derivedProfileDisabled, "Describes the ride's power-duration emphasis. Meet Target Duration selects a route-oriented profile automatically.")}
+        ${selectField("Profile", "demand.profile", PROFILES.map((profile) => [profile.id, `${profile.label} (${profile.bestPower})`]), plan.demand.profile, derivedProfileDisabled, "Describes the ride's power-duration emphasis. Manual and imported demand are matched from the aerobic, hard-effort, and sprint allocation; Meet Target Duration uses the route estimate. Xert's separate Pure/Mixed/Polar specificity rating is not inferred here.")}
         ${selectField("Difficulty", "demand.difficulty", [["moderate", "Moderate"], ["difficult", "Difficult"]], plan.demand.difficulty, derivedProfileDisabled, "Describes the required intensity tier. Meet Target Duration derives it from estimated average power relative to threshold power.")}
         ${numberField("Aerobic Demand", "demand.aerobic", number(plan.demand.aerobic), demandDisabled, "0.1", "Steady endurance workload accumulated below the lower threshold. This usually makes up most of the ride's workload.", 500)}
         ${numberField("Hard-Effort Demand", "demand.hardEffort", number(plan.demand.hardEffort), demandDisabled, "0.1", "Workload from sustained hard efforts such as attacks, hard climbs, or prolonged surges.", 150)}
@@ -95,6 +95,9 @@ function renderPlanningUI(root, plan, {
     const next = structuredClone(plan);
     updatePlanValue(next, input.dataset.path, input.value, imperial);
     if (input.dataset.path === "demand.profile" && next.demand.mode !== "target-duration") applyProfileDemandSuggestions(next);
+    if (/^demand\.(aerobic|hardEffort|sprint)$/.test(input.dataset.path) && next.demand.mode !== "target-duration") {
+      next.demand.profile = deriveDemandProfile(next);
+    }
     onChange(next, input.dataset.path);
   };
   root.onclick = (event) => {

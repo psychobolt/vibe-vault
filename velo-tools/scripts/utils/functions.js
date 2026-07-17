@@ -32,6 +32,9 @@ function enhanceNumberSliders(root = document) {
       slider = document.createElement("input");
       slider.type = "range";
       slider.className = "number-slider";
+      if (numberInput.classList.contains("demand-low")) slider.classList.add("number-slider--aerobic");
+      if (numberInput.classList.contains("demand-high")) slider.classList.add("number-slider--hard");
+      if (numberInput.classList.contains("demand-peak")) slider.classList.add("number-slider--sprint");
       slider.setAttribute("aria-label", `${numberInput.getAttribute("aria-label") || numberInput.closest("label")?.querySelector(".field-label")?.textContent?.trim() || "Number"} slider`);
       row.insertBefore(slider, numberInput);
       slider.addEventListener("input", () => {
