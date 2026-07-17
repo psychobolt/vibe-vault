@@ -1,7 +1,7 @@
     const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSidebar, createPlanStore, downloadFile, downloadJson, protectSummaryActions, readJsonFile, renderSummaryFields, restoreSectionAnchor, setStatus, wholeWatts } = VeloApp;
     const { roundTo } = VeloMath;
     const { enhanceNumberSliders, escapeHtml } = VeloUtils;
-    const { PROFILES, calculateDemandFromTargetDuration, combinedDemand, createDefaultPlan, createDefaultPowerTargets, createProfilePowerTargets, deriveDemandProfile, durationWeightedAveragePower, estimatedWorkload, estimateMechanicalPower, normalizePlan, targetPower } = VeloPlanning;
+    const { PROFILES, calculateDemandFromTargetDuration, combinedDemand, createDefaultPlan, createDefaultPowerTargets, createProfilePowerTargets, deriveDemandProfile, durationCounts, effectiveTargetDurations, durationWeightedAveragePower, estimatedWorkload, estimateMechanicalPower, estimatePowerForSpeed, normalizePlan, targetPower } = VeloPlanning;
     const { renderPlanningUI } = VeloPlanningUI;
     const { parseActivityFile } = VeloActivity;
 
@@ -15,6 +15,7 @@
       loadedControl: document.querySelector("#loaded-plan-control"),
       loadedName: document.querySelector("#loaded-plan-name"),
       tapeUnits: document.querySelector("#tape-units"),
+      targetsUnits: document.querySelector("#targets-units"),
       summaryUnits: document.querySelector("#summary-units"),
       status: document.querySelector("#status"),
       stemWidth: document.querySelector("#stem-width"),
@@ -89,7 +90,7 @@
         route: "Route and Duration",
         resistance: "Ride Resistance",
         demand: "Demand and Profile",
-        targets: "Power Targets",
+        targets: "Pacing Targets",
         tape: "Stem Dashboard",
       };
       setStatus(elements.status, `${direction === "undo" ? "Undid" : "Redid"} ${labels[section] || section} change.`);
@@ -115,6 +116,7 @@
         durationMinutes: 10,
         durationValue: 10,
         durationUnit: "minutes",
+        durationEnabled: true,
         textColor: "#455a64",
         backgroundColor: "#ffffff",
       };
@@ -130,11 +132,31 @@
 
     function commit(plan, path = "") {
       plan.source.tool = "power-master";
+      syncSpeedTargets(plan);
+      if (path === "powerTargets") syncMovingDurationFromTargets(plan);
       if (plan.demand.mode === "target-duration") calculateDemandFromTargetDuration(plan);
       store.set(plan);
+      if (path === "powerTargets") showAlignmentStatus(store.get());
+    }
+
+    function syncMovingDurationFromTargets(plan) {
+      const total = plan.powerTargets.reduce((sum, row) => {
+        return durationCounts(row) ? sum + Math.max(0, Number(row.durationMinutes) || 0) : sum;
+      }, 0);
+      // Disabled rows remain useful condition targets, but do not contribute to
+      // the route moving-time total. A zero total is meaningful when every row
+      // is intentionally excluded, so keep the summary honest in that case.
+      plan.route.movingDurationMinutes = roundTo(total, 1);
+    }
+
+    function syncSpeedTargets(plan) {
+      plan.powerTargets.forEach((row) => {
+        if (row.powerMode === "speed") row.targetPower = estimatePowerForSpeed(plan, row);
+      });
     }
 
     function render(plan) {
+      syncSpeedTargets(plan);
       renderPlanningUI(elements.planning, plan, {
         showUnits: true,
         onChange(next, path) { remember(path === "units" ? "athlete" : path.split(".")[0], plan); commit(next, path); },
@@ -168,6 +190,7 @@
       renderTape(plan);
       renderLoadedFile(plan);
       elements.tapeUnits.value = plan.units;
+      if (elements.targetsUnits) elements.targetsUnits.value = plan.units;
       document.querySelector("#targets-undo").disabled = !histories.targets.undo.length;
       document.querySelector("#targets-redo").disabled = !histories.targets.redo.length;
       document.querySelector("#tape-undo").disabled = !histories.tape.undo.length;
@@ -197,19 +220,23 @@
             <span class="drag-handle" title="Drag to reorder" aria-label="Drag ${escapeHtml(row.label)} to reorder">⋮⋮</span>
             <button class="mobile-move-control" type="button" data-move-index="${index}" data-move-direction="-1" aria-label="Move ${escapeHtml(row.label)} up" title="Move up" ${index === 0 ? "disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg></button>
             <button class="mobile-move-control" type="button" data-move-index="${index}" data-move-direction="1" aria-label="Move ${escapeHtml(row.label)} down" title="Move down" ${index === plan.powerTargets.length - 1 ? "disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg></button>
+            <button class="dashboard-visibility icon-button" type="button" data-toggle-dashboard-row="${escapeHtml(row.id)}" title="${row.visibleInDashboard === false ? "Show" : "Hide"} ${escapeHtml(row.label)} in Dashboard" aria-label="${row.visibleInDashboard === false ? "Show" : "Hide"} ${escapeHtml(row.label)} in Dashboard" aria-pressed="${row.visibleInDashboard !== false}"><svg viewBox="0 0 24 24" aria-hidden="true">${row.visibleInDashboard === false ? '<path d="m3 3 18 18"/><path d="M10.6 6.2A10.8 10.8 0 0 1 12 6c6.5 0 10 6 10 6a18 18 0 0 1-3.2 3.8M6.2 6.7C3.5 8.3 2 12 2 12s3.5 6 10 6a10 10 0 0 0 2.7-.4"/>' : '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/>'}</svg></button>
+            <button class="clone-target icon-button" type="button" data-clone-target="${escapeHtml(row.id)}" title="Clone ${escapeHtml(row.label)}" aria-label="Clone ${escapeHtml(row.label)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h11v13H8z"/><path d="M5 16H3V3h13v2"/></svg></button>
             <button class="reset-target" type="button" data-reset-row="${index}" title="Restore ${escapeHtml(row.label)} original values" aria-label="Restore ${escapeHtml(row.label)} original values"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4L13.6 6.4a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8L7 21Z"/><path d="m6 14 4 4"/><path d="M7 21h12"/></svg></button>
             <button class="remove-target danger" type="button" data-remove="${index}" title="Remove ${escapeHtml(row.label)}" aria-label="Remove ${escapeHtml(row.label)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
           </span>
           ${targetLabelField(row)}
-          ${terrainField(row.terrain)}
+          ${terrainField(row.terrain, row.id, plan.powerTargets, row.overlapWith)}
           ${powerModeField(row.powerMode)}
+          ${row.powerMode === "speed" ? speedField(row, plan.units) : ""}
           ${row.powerMode === "range" ? field("Min W", "minPower", row.minPower, "number") : ""}
           ${row.powerMode === "target" ? field("Target W", "targetPower", row.targetPower, "number") : ""}
+          ${row.powerMode === "speed" ? readonlyPowerField(row.targetPower) : ""}
           ${row.powerMode === "range" ? field("Max W", "maxPower", row.maxPower, "number") : ""}
           ${field("Cadence", "cadence", row.cadence, "text")}
-          ${durationField(row)}
           ${field("Text", "textColor", row.textColor, "color")}
           ${field("BG", "backgroundColor", row.backgroundColor, "color")}
+          ${durationField(row)}
           <span class="target-actions">
             <button class="pin-target section-sticky-toggle" type="button" data-sticky-target="${targetDomId(row.id)}" data-sticky-label="${escapeHtml(row.label)}" title="Pin ${escapeHtml(row.label)}" aria-label="Pin ${escapeHtml(row.label)}" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3-1-6Z"/><path d="M12 14v7"/></svg></button>
             <button class="target-collapse icon-button" type="button" data-toggle-target="${escapeHtml(row.id)}" title="${collapsedTargetIds.has(row.id) ? "Expand" : "Collapse"} ${escapeHtml(row.label)}" aria-label="${collapsedTargetIds.has(row.id) ? "Expand" : "Collapse"} ${escapeHtml(row.label)}" aria-expanded="${collapsedTargetIds.has(row.id) ? "false" : "true"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
@@ -224,15 +251,24 @@
         else collapsedTargetIds.add(id);
         renderTargets(store.get());
       }));
+      elements.targets.querySelectorAll("[data-toggle-dashboard-row]").forEach((button) => button.addEventListener("click", () => {
+        const plan = store.get();
+        const row = plan.powerTargets.find((item) => item.id === button.dataset.toggleDashboardRow);
+        if (!row) return;
+        remember("targets");
+        row.visibleInDashboard = row.visibleInDashboard === false;
+        commit(plan, "powerTargets");
+      }));
 
       elements.targets.querySelectorAll("[data-key]").forEach((input) => input.addEventListener("change", (event) => {
         remember("targets");
         const plan = store.get();
         const row = plan.powerTargets[Number(event.target.closest("[data-index]").dataset.index)];
         const key = event.target.dataset.key;
-        if (["label", "terrain", "cadence", "textColor", "backgroundColor"].includes(key)) row[key] = event.target.value;
+        if (["label", "terrain", "cadence", "textColor", "backgroundColor", "overlapWith"].includes(key)) row[key] = event.target.value;
         else if (key === "powerMode") {
           row.powerMode = event.target.value;
+          if (row.powerMode === "speed" && !(row.targetSpeedKph > 0)) row.targetSpeedKph = 25;
           if (row.powerMode === "range" && (!(row.minPower > 0) || !(row.maxPower > 0))) {
             const center = row.targetPower || plan.athlete.thresholdPower;
             row.minPower = Math.max(1, Math.round(center * .97));
@@ -248,13 +284,31 @@
         } else if (key === "durationUnit") {
           row.durationUnit = event.target.value;
           row.durationValue = normalizeDurationValue(minutesToDuration(row.durationMinutes, row.durationUnit), row.durationUnit);
+        } else if (key === "durationEnabled") {
+          row.durationEnabled = event.target.checked;
+        } else if (key === "targetSpeedKph") {
+          const speed = Number(event.target.value) || 0;
+          row.targetSpeedKph = Math.max(0, roundTo(event.target.dataset.speedUnit === "mph" ? speed / 0.6213711922 : speed, 1));
         }
+        commit(plan, "powerTargets");
+      }));
+      elements.targets.querySelectorAll("[data-clone-target]").forEach((button) => button.addEventListener("click", () => {
+        remember("targets");
+        const plan = store.get();
+        const index = plan.powerTargets.findIndex((row) => row.id === button.dataset.cloneTarget);
+        if (index < 0) return;
+        const clone = structuredClone(plan.powerTargets[index]);
+        clone.id = crypto.randomUUID();
+        clone.label = `${clone.label || "TARGET"} COPY`;
+        clone.overlapWith = "";
+        plan.powerTargets.splice(index + 1, 0, clone);
         commit(plan, "powerTargets");
       }));
       elements.targets.querySelectorAll("[data-remove]").forEach((button) => button.addEventListener("click", () => {
         remember("targets");
         const plan = store.get();
-        plan.powerTargets.splice(Number(button.dataset.remove), 1);
+        const removed = plan.powerTargets.splice(Number(button.dataset.remove), 1)[0];
+        plan.powerTargets.forEach((target) => { if (target.overlapWith === removed?.id) target.overlapWith = ""; });
         commit(plan, "powerTargets");
       }));
       elements.targets.querySelectorAll("[data-reset-row]").forEach((button) => button.addEventListener("click", () => {
@@ -282,16 +336,16 @@
     function updateTargetCollapseToggle(plan) {
       const allCollapsed = plan.powerTargets.length > 0 && plan.powerTargets.every((row) => collapsedTargetIds.has(row.id));
       elements.toggleTargets.disabled = plan.powerTargets.length === 0;
-      elements.toggleTargets.title = allCollapsed ? "Expand All Power Targets" : "Collapse All Power Targets";
+      elements.toggleTargets.title = allCollapsed ? "Expand All Pacing Targets" : "Collapse All Pacing Targets";
       elements.toggleTargets.setAttribute("aria-label", elements.toggleTargets.title);
       elements.toggleTargets.innerHTML = allCollapsed
         ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5-5 5 5M7 14l5 5 5-5"/></svg>`
         : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5-5 5 5M7 15l5 5 5-5"/></svg>`;
     }
 
-    function field(label, key, value, type) {
+    function field(label, key, value, type, max = 1200, step = 1) {
       const className = key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-      const numeric = type === "number" ? "min=\"0\" max=\"1200\" step=\"1\" data-slider-max=\"1200\"" : "";
+      const numeric = type === "number" ? `min="0" max="${max}" step="${step}" data-slider-max="${max}" data-slider-step="${step}"` : "";
       return `<label class="field target-field--${className}"><span>${label}</span><input type="${type}" ${numeric} value="${value}" data-key="${key}"></label>`;
     }
 
@@ -305,19 +359,30 @@
       return `power-target-${String(id).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
     }
 
-    function terrainField(value) {
-      return `<label class="field target-field--terrain"><span>Terrain</span><select data-key="terrain">${["flat", "incline", "climb", "decline", "steep-ramp"].map((terrain) => `<option value="${terrain}" ${terrain === value ? "selected" : ""}>${terrain}</option>`).join("")}</select></label>`;
+    function terrainField(value, rowId, targets, overlapWith) {
+      return `<label class="field target-field--terrain"><span>Terrain</span><select data-key="terrain">${["flat", "incline", "climb", "decline", "steep-ramp"].map((terrain) => `<option value="${terrain}" ${terrain === value ? "selected" : ""}>${terrain}</option>`).join("")}</select></label><label class="field target-field--overlap"><span>Overlap</span><select data-key="overlapWith" aria-label="Overlap target" title="Run this target within the selected target. Its duration replaces parent minutes for power, cadence, and workload without adding moving time."><option value="">None</option>${targets.filter((target) => target.id !== rowId).map((target) => `<option value="${escapeHtml(target.id)}" ${overlapWith === target.id ? "selected" : ""}>${escapeHtml(target.label || "Target")}</option>`).join("")}</select></label>`;
     }
 
     function powerModeField(value) {
-      return `<label class="field target-field--power-mode"><span>Power</span><select data-key="powerMode"><option value="target" ${value === "target" ? "selected" : ""}>Target</option><option value="range" ${value === "range" ? "selected" : ""}>Range</option></select></label>`;
+      return `<label class="field target-field--power-mode"><span>Power</span><select data-key="powerMode" title="Speed estimates restart power from target speed and row duration"><option value="target" ${value === "target" ? "selected" : ""}>Target</option><option value="range" ${value === "range" ? "selected" : ""}>Range</option><option value="speed" ${value === "speed" ? "selected" : ""}>Speed</option></select></label>`;
+    }
+
+    function speedField(row, units) {
+      const imperial = units === "imperial";
+      const display = imperial ? (row.targetSpeedKph || 0) * 0.6213711922 : (row.targetSpeedKph || 0);
+      const max = imperial ? 75 : 120;
+      return `<label class="field target-field--target-speed-kph"><span>Speed (${imperial ? "mph" : "km/h"})</span><input type="number" min="0" max="${max}" step="0.1" value="${roundTo(display, 1)}" data-slider-max="${max}" data-slider-step="0.1" data-speed-unit="${imperial ? "mph" : "kph"}" data-key="targetSpeedKph"></label>`;
+    }
+
+    function readonlyPowerField(value) {
+      return `<label class="field target-field--ramp-power"><span>Ramp W</span><input type="number" value="${wholeWatts(value)}" readonly aria-label="Estimated ramp power" title="Estimated from target speed, duration, rider, bike, and resistance."></label>`;
     }
 
     function durationField(row) {
       const unit = row.durationUnit || "minutes";
       const step = unit === "seconds" ? 1 : unit === "hours" ? 0.01 : 0.1;
       const maximum = unit === "seconds" ? 3600 : unit === "hours" ? 24 : 1440;
-      return `<label class="field target-field--duration"><span>Duration</span><div class="duration-control"><input type="number" min="0" max="${maximum}" step="${step}" value="${normalizeDurationValue(row.durationValue ?? row.durationMinutes, unit)}" data-slider-max="${maximum}" data-slider-step="${step}" data-key="durationValue"><select data-key="durationUnit"><option value="seconds" ${unit === "seconds" ? "selected" : ""}>sec</option><option value="minutes" ${unit === "minutes" ? "selected" : ""}>min</option><option value="hours" ${unit === "hours" ? "selected" : ""}>hr</option></select></div></label>`;
+      return `<label class="field target-field--duration"><span>Duration</span><div class="duration-control"><input type="number" min="0" max="${maximum}" step="${step}" value="${normalizeDurationValue(row.durationValue ?? row.durationMinutes, unit)}" data-slider-max="${maximum}" data-slider-step="${step}" data-key="durationValue"><select data-key="durationUnit"><option value="seconds" ${unit === "seconds" ? "selected" : ""}>sec</option><option value="minutes" ${unit === "minutes" ? "selected" : ""}>min</option><option value="hours" ${unit === "hours" ? "selected" : ""}>hr</option></select><span class="duration-enabled"><input type="checkbox" data-key="durationEnabled" aria-label="Count this target" title="Count this target" ${row.durationEnabled !== false ? "checked" : ""}><span class="duration-enabled-label">On</span></span></div></label>`;
     }
 
     function durationToMinutes(value, unit) { return unit === "seconds" ? value / 60 : unit === "hours" ? value * 60 : value; }
@@ -407,6 +472,9 @@
       const estimatedIf = plan.athlete.thresholdPower > 0 ? displayedPower / plan.athlete.thresholdPower : 0;
       const speedKmh = plan.route.movingDurationMinutes > 0 ? plan.route.distanceKm / (plan.route.movingDurationMinutes / 60) : 0;
       const speed = plan.units === "imperial" ? speedKmh * 0.6213711922 : speedKmh;
+      const cadence = averageCadence(plan);
+      const flatPower = averageTerrainPower(plan, (row) => row.terrain === "flat");
+      const elevationPower = averageTerrainPower(plan, (row) => row.terrain !== "flat");
       const workload = plan.powerTargets.length ? estimatedWorkload(plan) : combinedDemand(plan);
       const demandTotal = combinedDemand(plan);
       const alignment = plan.powerTargets.length && demandTotal > 0 ? ((workload - demandTotal) / demandTotal) * 100 : null;
@@ -415,15 +483,19 @@
       // Alignment controls stay out of the way once the plan is within ±0.9%.
       const alignmentActions = displayedAlignment != null && Math.abs(displayedAlignment) > .9 ? [
         { action: "demand-minus", label: "Decrease combined demand by 1%", text: "−" },
+        { action: "demand-fit", label: "Recalculate demand and profile from the pacing targets", text: "↻", kind: "fit" },
         { action: "demand-plus", label: "Increase combined demand by 1%", text: "+" },
-        { action: "demand-fit", label: "Recalculate demand and profile from the power targets", text: "↻", kind: "fit" },
       ] : [];
       renderSummaryFields(elements.summary, [
-        { label: "Moving duration", value: `${plan.route.movingDurationMinutes.toFixed(1)} min`, tooltip: "Total planned time in motion across the route." },
+        { label: "Moving duration", value: `${plan.route.movingDurationMinutes.toFixed(1)} min`, tooltip: "Automatically totaled from enabled Pacing Target durations. Overlap rows replace parent minutes instead of adding time." },
+        ...(plan.route.stoppedDurationMinutes > 0 ? [{ label: "Elapsed duration", value: `${(plan.route.movingDurationMinutes + plan.route.stoppedDurationMinutes).toFixed(1)} min`, tooltip: "Moving duration plus planned stop time. Stop time does not affect the power-weighted average." }] : []),
         { label: "Average speed", value: speed > 0 ? `${speed.toFixed(1)} ${plan.units === "imperial" ? "mph" : "km/h"}` : "Add route distance", tooltip: "Route distance divided by moving duration; stopped time is excluded." },
+        { label: "Average cadence", value: cadence ? `${cadence.toFixed(0)} rpm` : "—", tooltip: "Duration-weighted average cadence from enabled Pacing Target rows, including overlap rows within their parent time." },
         { label: weighted ? "Duration-weighted power" : "Estimated average power", value: displayedPower ? `${Math.round(displayedPower)} W` : "Add route distance", tooltip: "Average mechanical power weighted by each target row's assigned duration." },
+        { label: "Average flat power", value: flatPower ? `${Math.round(flatPower)} W` : "—", tooltip: "Duration-weighted average power for enabled flat-terrain targets. Overlap rows replace their parent minutes." },
+        { label: "Average elevation power", value: elevationPower ? `${Math.round(elevationPower)} W` : "—", tooltip: "Duration-weighted average power for enabled incline, climb, decline, and steep-ramp targets. Overlap rows replace their parent minutes." },
         { label: "Estimated IF", value: estimatedIf > 0 ? estimatedIf.toFixed(2) : "—", tooltip: "Duration-weighted average power divided by threshold power; this is an estimate, not normalized-power IF." },
-        { label: "Estimated workload", value: workload.toFixed(1), tooltip: "Simplified threshold-relative workload from the target rows. Overlapping row durations are proportionally normalized to the route moving duration." },
+        { label: "Estimated workload", value: workload.toFixed(1), tooltip: "Simplified threshold-relative workload from the target rows. An overlap row replaces the same number of parent minutes and adds no moving time." },
         { label: "Combined demand", value: demandTotal.toFixed(1), tooltip: "The sum of aerobic, hard-effort, and sprint demand." },
         { label: "Demand alignment", value: displayedAlignment == null ? "—" : `${displayedAlignment >= 0 ? "+" : ""}${displayedAlignment.toFixed(1)}%`, tooltip: "Difference between Power Master target workload and combined demand. Controls appear only outside the ±0.9% aligned range.", tone: alignmentTone, actions: alignmentActions },
       ]);
@@ -431,6 +503,47 @@
         if (button.dataset.summaryAction === "demand-minus") adjustDemandRatio(.99);
         if (button.dataset.summaryAction === "demand-plus") adjustDemandRatio(1.01);
         if (button.dataset.summaryAction === "demand-fit") fitDemandToPowerTargets();
+      }));
+    }
+
+    function averageCadence(plan) {
+      const rows = effectiveTargetDurations(plan).filter(({ row, minutes }) => minutes > 0 && parseCadence(row.cadence) > 0);
+      const minutes = rows.reduce((sum, item) => sum + item.minutes, 0);
+      return minutes ? rows.reduce((sum, item) => sum + parseCadence(item.row.cadence) * item.minutes, 0) / minutes : 0;
+    }
+
+    function averageTerrainPower(plan, matchesTerrain) {
+      const rows = effectiveTargetDurations(plan).filter(({ row, minutes }) => minutes > 0 && targetPower(row) > 0 && matchesTerrain(row));
+      const minutes = rows.reduce((sum, item) => sum + item.minutes, 0);
+      return minutes ? rows.reduce((sum, item) => sum + targetPower(item.row) * item.minutes, 0) / minutes : 0;
+    }
+
+    function parseCadence(value) {
+      const values = String(value ?? "").match(/\d+(?:\.\d+)?/g);
+      if (!values?.length) return 0;
+      return values.reduce((sum, item) => sum + Number(item), 0) / values.length;
+    }
+
+    function showAlignmentStatus(plan) {
+      const demandTotal = combinedDemand(plan);
+      if (!plan.powerTargets.length || !(demandTotal > 0)) {
+        setStatus(elements.status, "");
+        return;
+      }
+      const alignment = ((estimatedWorkload(plan) - demandTotal) / demandTotal) * 100;
+      const displayed = Math.round(alignment * 10) / 10;
+      if (Math.abs(displayed) <= .9) {
+        setStatus(elements.status, "");
+        return;
+      }
+      const tone = displayed > 0 ? "alignment-positive" : "alignment-negative";
+      setStatus(elements.status, `Demand alignment ${displayed >= 0 ? "+" : ""}${displayed.toFixed(1)}%`, tone);
+      elements.status.innerHTML = `<span>Demand alignment <strong>${displayed >= 0 ? "+" : ""}${displayed.toFixed(1)}%</strong></span><span class="alignment-status-actions"><button type="button" data-alignment-action="demand-minus" aria-label="Decrease demand by 1%" title="Decrease demand by 1%">−</button><button type="button" class="alignment-status-fit" data-alignment-action="demand-fit" aria-label="Recalculate demand and profile" title="Recalculate demand and profile">↻</button><button type="button" data-alignment-action="demand-plus" aria-label="Increase demand by 1%" title="Increase demand by 1%">+</button></span>`;
+      elements.status.querySelectorAll("[data-alignment-action]").forEach((button) => button.addEventListener("click", () => {
+        if (button.dataset.alignmentAction === "demand-minus") adjustDemandRatio(.99);
+        if (button.dataset.alignmentAction === "demand-plus") adjustDemandRatio(1.01);
+        if (button.dataset.alignmentAction === "demand-fit") fitDemandToPowerTargets();
+        showAlignmentStatus(store.get());
       }));
     }
 
@@ -466,7 +579,7 @@
       plan.demand.mode = "manual";
       store.set(plan);
       const profile = PROFILES.find((item) => item.id === plan.demand.profile)?.label || "best matching profile";
-      setStatus(elements.status, `Recalculated demand from the power targets and matched ${profile} from its demand composition.`);
+      setStatus(elements.status, `Recalculated demand from the pacing targets and matched ${profile} from its demand composition.`);
     }
 
     function renderTapeAppearance(plan) {
@@ -500,7 +613,7 @@
       elements.tape.style.width = `${plan.tape.stemWidthMm}mm`;
       elements.tape.style.fontSize = `${plan.tape.baseFontSizePt}pt`;
       elements.tape.style.zoom = String(plan.tape.previewZoom / 100);
-      elements.tape.innerHTML = `<div style="padding:2px 1px;font-weight:900">AVG ${average}W</div><table><tbody>${plan.powerTargets.map((row) => `<tr style="color:${row.textColor};background:${row.backgroundColor}"><td style="width:43%;padding:1px 0 1px 2px;border-left:2px solid ${row.textColor};font-weight:800">${escapeHtml(row.label)}</td><td style="width:36%;padding:1px 0;font-weight:800">${powerText(row)}</td><td style="width:21%;padding:1px 2px 1px 0;font-size:.9em">${escapeHtml(row.cadence)}</td></tr>`).join("")}</tbody></table>`;
+      elements.tape.innerHTML = `<div style="padding:2px 1px;font-weight:900">AVG ${average}W</div><table><tbody>${plan.powerTargets.filter((row) => row.visibleInDashboard !== false).map((row) => `<tr style="color:${row.textColor};background:${row.backgroundColor}"><td style="width:43%;padding:1px 0 1px 2px;border-left:2px solid ${row.textColor};font-weight:800">${escapeHtml(row.label)}</td><td style="width:36%;padding:1px 0;font-weight:800">${powerText(row)}</td><td style="width:21%;padding:1px 2px 1px 0;font-size:.9em">${escapeHtml(row.cadence)}</td></tr>`).join("")}</tbody></table>`;
       requestAnimationFrame(() => fitTape(plan));
     }
 
@@ -541,7 +654,7 @@
     document.querySelector("#add-target").addEventListener("click", () => {
       remember("targets");
       const plan = store.get();
-      plan.powerTargets.push({ id: crypto.randomUUID(), label: "TARGET", terrain: "flat", powerMode: "target", minPower: 0, targetPower: plan.athlete.thresholdPower, maxPower: 0, cadence: "90", durationMinutes: 10, textColor: "#455a64", backgroundColor: "#ffffff" });
+      plan.powerTargets.push({ id: crypto.randomUUID(), label: "TARGET", terrain: "flat", powerMode: "target", minPower: 0, targetPower: plan.athlete.thresholdPower, maxPower: 0, cadence: "90", durationMinutes: 10, durationEnabled: true, textColor: "#455a64", backgroundColor: "#ffffff" });
       commit(plan, "powerTargets");
     });
     function applyProfileTargets(mode) {
@@ -605,6 +718,12 @@
       plan.units = elements.tapeUnits.value;
       commit(plan, "units");
     });
+    elements.targetsUnits?.addEventListener("change", () => {
+      remember("athlete");
+      const plan = store.get();
+      plan.units = elements.targetsUnits.value;
+      commit(plan, "units");
+    });
     elements.summaryUnits.addEventListener("change", () => {
       remember("athlete");
       const plan = store.get();
@@ -656,6 +775,9 @@
         const file = elements.file.files[0];
         const plan = await readJsonFile(file);
         plan.source = { ...plan.source, tool: "power-master", fileName: file.name };
+        syncSpeedTargets(plan);
+        syncMovingDurationFromTargets(plan);
+        if (plan.demand.mode === "target-duration") calculateDemandFromTargetDuration(plan);
         setLoadedBaseline(plan);
         clearHistories();
         store.set(plan);

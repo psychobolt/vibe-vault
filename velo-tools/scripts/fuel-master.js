@@ -288,6 +288,41 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
       return `${tbsp ? `${tbsp} tbsp` : ""}${tsp ? `${tbsp ? " + " : ""}${formatSpoonAmount(tsp)}` : ""}`.trim();
     }
 
+    // Recipes pair each numeric measure with a recognizable tool graphic. The
+    // written quantity remains in the DOM for accessibility and saved recipes.
+    function measurementIcon(kind) {
+      if (kind === "liquid") {
+        return `<svg viewBox="0 0 48 32" aria-hidden="true"><path class="measure-outline" d="M8 5h25v21H8zM33 10h5a6 6 0 0 1 0 12h-5M12 12h12M12 18h8"/><path class="measure-fill" d="M10 19h21v5H10z"/></svg>`;
+      }
+      if (kind === "scoop") {
+        return `<svg viewBox="0 0 52 32" aria-hidden="true"><path class="measure-outline" d="M4 12h25l-4 13H9zM28 13h20v7H27"/><path class="measure-fill" d="M7 9h19v6H7z"/></svg>`;
+      }
+      return `<svg viewBox="0 0 52 32" aria-hidden="true"><path class="measure-outline" d="M4 13h23l-4 11H9zM26 14h22v6H25"/><path class="measure-fill" d="M7 10h17v5H7z"/></svg>`;
+    }
+
+    function measurementParts(quantity) {
+      return String(quantity).split(/\s*\+\s*/).flatMap((rawPart) => {
+        const part = rawPart.trim();
+        let match = part.match(/^(\d+(?:\.\d+)?)\s*[×x]\s*((?:\d+\s+)?\d+\/\d+|\d+(?:\.\d+)?)\s+(.+)$/i);
+        if (match) return [{ count: match[1], unit: `${match[2]} ${match[3]}` }];
+        match = part.match(/^(\d+)\s+(\d+\/\d+)\s+(tsp|tbsp)$/i);
+        if (match) return [{ count: match[1], unit: `1 ${match[3]}` }, { count: "1", unit: `${match[2]} ${match[3]}` }];
+        match = part.match(/^(\d+(?:\.\d+)?|\d+\/\d+)\s+(.+)$/i);
+        if (match && /^\d+$/.test(match[1]) && /^(tsp|tbsp)$/i.test(match[2]) && Number(match[1]) > 1) {
+          return [{ count: match[1], unit: `1 ${match[2]}` }];
+        }
+        if (match) return [{ count: "1", unit: `${match[1]} ${match[2]}` }];
+        return [{ count: "1", unit: part }];
+      });
+    }
+
+    function measuredIngredient(quantity, ingredient, { kind = "powder", detail = "" } = {}) {
+      const safeQuantity = escapeHtml(quantity);
+      const parts = measurementParts(quantity);
+      const visual = parts.map((part, index) => `${index ? '<span class="measure-plus" aria-hidden="true">+</span>' : ""}<span class="measure-piece"><strong class="measure-count">${escapeHtml(part.count)}×</strong><span class="measure-tool measure-tool--${kind}">${measurementIcon(kind)}<span>${escapeHtml(part.unit)}</span></span></span>`).join("");
+      return `<li class="measure-instruction"><div class="measure-visual" aria-label="${safeQuantity}">${visual}</div><div class="measure-copy"><strong>${escapeHtml(ingredient)}</strong>${detail ? `<small>${escapeHtml(detail)}</small>` : ""}</div></li>`;
+    }
+
     const commercialCarbSources = {
       "sucrose-dextrose": {
         glucoseFraction: null,
@@ -322,7 +357,7 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
     }
 
     function renderRecipe(plan, values) {
-      const { bottleShare, gelCarbs, gelFlasks, gelStops, gelPerFlask, gelPerStop, gelLiquidOz, gelLiquidPerStopOz, waterRecommended } = values;
+      const { bottleShare, gelCarbs, gelStops, gelLiquidOz, gelLiquidPerStopOz } = values;
       const bottleCount = Math.max(1, Math.floor(Number(fuel.bottles) || 1));
       const perBottle = bottleShare / bottleCount;
       const configuredBaseCarbs = fuel.haveGatorade ? Math.max(0, Number(fuel.drinkCarbs) || 0) : 0;
@@ -332,16 +367,17 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
       const carbSplit = bottleCarbSplit(baseCarbs, remaining);
       const bottleIngredients = document.querySelector("#bottle-ingredients");
       bottleIngredients.innerHTML = "";
-      if (fuel.haveGatorade && baseCarbs > 0) bottleIngredients.insertAdjacentHTML("beforeend", `<li>${escapeHtml(fuel.drinkName)}: ${baseServings >= .995 ? "1 entered serving" : `${baseServings.toFixed(2)} serving`} (${baseCarbs.toFixed(0)}g carbs; ${carbSplit.source.description}).</li>`);
+      if (fuel.haveGatorade && baseCarbs > 0) bottleIngredients.insertAdjacentHTML("beforeend", measuredIngredient(baseServings >= .995 ? "1 serving" : `${baseServings.toFixed(2)} serving`, fuel.drinkName, { kind: "scoop", detail: `${baseCarbs.toFixed(0)}g carbs · ${carbSplit.source.description}` }));
       if (remaining > 0 && fuel.haveMalto && fuel.haveFructose) {
-        bottleIngredients.insertAdjacentHTML("beforeend", `<li>${formatPowder(carbSplit.maltoCarbs / 8)} maltodextrin.</li><li>${formatPowder(carbSplit.fructoseCarbs / 12)} pure fructose.</li>`);
+        bottleIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatPowder(carbSplit.maltoCarbs / 8), "Maltodextrin"));
+        bottleIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatPowder(carbSplit.fructoseCarbs / 12), "Pure fructose"));
         if (baseCarbs > 0 && carbSplit.source.glucoseFraction == null) bottleIngredients.insertAdjacentHTML("beforeend", `<li class="recipe-warning"><strong>Ratio note:</strong> Sucrose supplies equal glucose and fructose, but added dextrose supplies more glucose. Because the commercial mix does not disclose their amounts, the complete bottle ratio cannot be verified; the supplemental powder alone is 2:1.</li>`);
         else if (baseCarbs > 0 && !carbSplit.exact) bottleIngredients.insertAdjacentHTML("beforeend", `<li class="recipe-warning"><strong>Ratio note:</strong> The selected base cannot reach exactly 2:1 within this bottle target. The closest available mix is about ${Number.isFinite(carbSplit.ratio) ? `${carbSplit.ratio.toFixed(2)}:1` : "glucose only"}.</li>`);
         else if (baseCarbs > 0) bottleIngredients.insertAdjacentHTML("beforeend", `<li><strong>Ratio:</strong> The complete bottle targets 2:1 glucose:fructose equivalent.</li>`);
       }
-      else if (remaining > 0) bottleIngredients.insertAdjacentHTML("beforeend", `<li>${formatPowder(remaining / 12)} sugar powder.</li>`);
+      else if (remaining > 0) bottleIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatPowder(remaining / 12), "Sugar powder"));
       if (baseCarbs > 0 && remaining <= 0 && carbSplit.source.glucoseFraction == null) bottleIngredients.insertAdjacentHTML("beforeend", `<li class="recipe-warning"><strong>Ratio note:</strong> The commercial mix contains sucrose and dextrose, so its exact glucose:fructose ratio is not known.</li>`);
-      if (fuel.haveSalt) bottleIngredients.insertAdjacentHTML("beforeend", `<li>${formatSpoonAmount(.25)} electrolyte salt.</li>`);
+      if (fuel.haveSalt) bottleIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatInventoryAmount(.25), "Electrolyte salt"));
       document.querySelector("#bottle-badge").textContent = `${bottleCount} bottle${bottleCount === 1 ? "" : "s"} · ${Math.round(perBottle)}g each`;
       document.querySelector("#bottle-recipe-card").hidden = bottleShare <= 0;
 
@@ -363,16 +399,18 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
       const gelIngredients = document.querySelector("#gel-ingredients");
       const gelSteps = document.querySelector("#gel-steps");
       gelIngredients.innerHTML = ""; gelSteps.innerHTML = "";
-      if (fuel.haveMalto && fuel.haveFructose) gelIngredients.insertAdjacentHTML("beforeend", `<li>${formatPowder(gelCarbs * .67 / 8)} maltodextrin.</li><li>${formatPowder(gelCarbs * .33 / 12)} pure fructose.</li>`);
-      else gelIngredients.insertAdjacentHTML("beforeend", `<li>${formatPowder(gelCarbs / 12)} regular sugar base.</li>`);
+      if (fuel.haveMalto && fuel.haveFructose) {
+        gelIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatPowder(gelCarbs * .67 / 8), "Maltodextrin"));
+        gelIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatPowder(gelCarbs * .33 / 12), "Pure fructose"));
+      } else gelIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatPowder(gelCarbs / 12), "Regular sugar base"));
       if (fuel.havePectin) {
         // Tested working formulation: 1/2 tsp Pomona's pectin + 1 tsp prepared calcium water.
         // Keep these amounts explicit so the instructions do not drift to 3/4 tsp through rounding.
-        gelIngredients.insertAdjacentHTML("beforeend", `<li>${formatInventoryAmount(.5)} Pomona's pectin powder + ${formatInventoryAmount(1)} prepared calcium water.</li>`);
+        gelIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatInventoryAmount(.5), "Pomona's pectin powder"));
+        gelIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatInventoryAmount(1), "Prepared calcium water", { kind: "liquid" }));
       }
-      if (fuel.haveSalt) gelIngredients.insertAdjacentHTML("beforeend", `<li>${formatSpoonAmount(.25)} electrolyte salt.</li>`);
-      gelIngredients.insertAdjacentHTML("beforeend", `<li>${gelLiquidOz.toFixed(1)} fl oz fruit base (${gelLiquidPerStopOz.toFixed(1)} fl oz per stop).</li>`);
-      gelSteps.insertAdjacentHTML("beforeend", `<li>Fill ${Math.max(1, Number(fuel.gelFlasks) || 1)} flask${Number(fuel.gelFlasks) === 1 ? "" : "s"} evenly: about ${Math.round(gelPerFlask)}g each.</li><li>Use over ${gelStops} stop${gelStops === 1 ? "" : "s"}: about ${Math.round(gelPerStop)}g per stop.</li><li>${waterRecommended ? "Drink water with each serving." : "Water is optional at this dilution."}</li>`);
+      if (fuel.haveSalt) gelIngredients.insertAdjacentHTML("beforeend", measuredIngredient(formatInventoryAmount(.25), "Electrolyte salt"));
+      gelIngredients.insertAdjacentHTML("beforeend", measuredIngredient(`${gelLiquidOz.toFixed(1)} fl oz`, "Fruit base", { kind: "liquid", detail: `${gelLiquidPerStopOz.toFixed(1)} fl oz per stop` }));
       gelSteps.insertAdjacentHTML("beforeend", `<li>Whisk the dry ingredients in a medium mixing bowl.</li><li>Add fruit base${fuel.havePectin ? " and calcium water" : ""}; whisk until smooth.</li><li>Pour into a heat-safe measuring cup.</li>`);
       if (fuel.havePectin) gelSteps.insertAdjacentHTML("beforeend", `<li>Microwave 30 seconds and stir. Watch continuously; stop immediately when rising begins. Stir and repeat until the mixture has risen three times total.</li><li>Transfer to flasks and seal while warm. Cool to room temperature before refrigerating.</li>`);
       else gelSteps.insertAdjacentHTML("beforeend", `<li>Microwave 25 seconds and stir; repeat briefly if needed.</li><li>Transfer to flasks and seal. Cool to room temperature before refrigerating.</li>`);
@@ -471,7 +509,7 @@ const { attachSectionLinks, attachSectionPins, attachStickyActions, attachToolSi
         *{box-sizing:border-box}body{font:16px/1.5 Arial,sans-serif;max-width:820px;margin:auto;padding:24px;color:#263238;background:#f4f7f8}h1,h2,h3{color:#1a237e}
         .equipment-card,.recipe-card,.recipe-plan{padding:16px;margin:0 0 16px;border:1px solid #cfd8dc;border-radius:8px;background:#fff}.equipment-card{background:#fffde7}
         .recipe-plan{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.recipe-item{display:grid;gap:4px;padding:12px 14px;border-left:4px solid #6a1b9a;border-radius:6px;color:#455a64;background:#f5f0fa}.recipe-item strong{color:#4a148c;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
-        li{margin:.4rem 0}.recipe-warning{padding:8px 10px;border-left:4px solid #f9a825;border-radius:5px;color:#6d4c00;background:#fff8e1;font-weight:700}.target-badge{float:right;font-size:12px;background:#ffebee;color:#b71c1c;padding:3px 7px;border-radius:4px}@media(max-width:560px){body{padding:14px}.recipe-plan{grid-template-columns:1fr}}
+        .recipe-card ul{display:grid;gap:8px;padding:0;list-style:none}.measure-instruction{display:grid;grid-template-columns:minmax(150px,auto) minmax(0,1fr);align-items:center;gap:10px;margin:0;padding:8px;border:1px solid #d7e2e7;border-radius:7px;background:#f8fbfc}.measure-visual,.measure-piece{display:flex;flex-wrap:wrap;align-items:center;gap:5px}.measure-piece{gap:4px}.measure-count{color:#00695c;font-size:14px}.measure-plus{color:#78909c;font-weight:900}.measure-tool{display:inline-grid;grid-template-columns:46px auto;align-items:center;gap:4px;min-height:34px;padding:3px 7px 3px 3px;border:1px solid #b0bec5;border-radius:17px 6px 6px 17px;background:#fff;font-size:11px;font-weight:800;white-space:nowrap}.measure-tool svg{width:46px;height:27px}.measure-outline{fill:none;stroke:#607d8b;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.measure-fill{fill:#f6b73c;opacity:.9}.measure-tool--liquid .measure-fill{fill:#42a5f5}.measure-tool--scoop .measure-fill{fill:#ffcc80}.measure-copy{display:grid;gap:2px}.measure-copy strong{color:#37474f}.measure-copy small{color:#607d8b;font-size:11px}.recipe-warning{padding:8px 10px;border-left:4px solid #f9a825;border-radius:5px;color:#6d4c00;background:#fff8e1;font-weight:700}.target-badge{float:right;font-size:12px;background:#ffebee;color:#b71c1c;padding:3px 7px;border-radius:4px}li{margin:.4rem 0}@media(max-width:560px){body{padding:14px}.recipe-plan{grid-template-columns:1fr}.measure-instruction{grid-template-columns:1fr}}
       </style></head><body><h1>Fuel Master Recipe</h1>${document.querySelector("#recipe-export-content").innerHTML}</body></html>`;
       const link = document.createElement("a");
       link.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));

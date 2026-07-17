@@ -25,7 +25,7 @@
       </article>
       <a class="tool-choice tool-choice--power" href="./power-master.html">
         <span class="choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m13 2-8 12h6l-1 8 9-13h-6V2Z"/></svg></span>
-        <span class="choice-copy"><strong>Power Master</strong><span>Build condition-specific power targets and a compact stem dashboard.</span></span>
+        <span class="choice-copy"><strong>Power Master</strong><span>Build condition-specific pacing targets and a compact stem dashboard.</span></span>
         <span class="choice-arrow" aria-hidden="true">→</span>
       </a>
       <a class="tool-choice tool-choice--fuel" href="./fuel-master.html">
@@ -36,19 +36,20 @@
     </section>
 
     <section class="tool-preview" aria-labelledby="preview-title">
-      <header class="preview-heading"><div><span class="landing-kicker">Tool Preview</span><h2 id="preview-title">See the ride-planning workspace</h2></div><nav class="preview-nav" aria-label="Choose preview"><a href="#preview-power" aria-label="Preview Power Master">1</a><a href="#preview-fuel" aria-label="Preview Fuel Master">2</a></nav></header>
+      <header class="preview-heading"><div><span class="landing-kicker">Tool Preview</span><h2 id="preview-title">See the ride-planning workspace</h2></div><nav class="preview-nav" aria-label="Choose preview"><a href="#preview-power" aria-label="Preview Power Master" title="Power Master"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-8 12h6l-1 8 9-13h-6V2Z"/></svg></a><a href="#preview-fuel" aria-label="Preview Fuel Master" title="Fuel Master"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2S5 10.1 5 15a7 7 0 0 0 14 0c0-4.9-7-13-7-13Z"/><path d="M9 16.5a3.5 3.5 0 0 0 3 1.5"/></svg></a></nav></header>
       <div class="preview-track">
         <article id="preview-power" class="preview-slide">
-          <picture><img src="./icons/power-features.svg" alt="Power Master target and range controls with a stem dashboard preview" loading="lazy"></picture>
+          <picture><source media="(max-width: 650px)" srcset="./icons/power-features-mobile.svg"><img src="./icons/power-features.svg" alt="Power Master target and range controls with a stem dashboard preview" loading="lazy"></picture>
           <footer><div><strong>Power Master</strong><span>Build detailed condition targets and a compact stem dashboard.</span></div><a href="./power-master.html">Open tool →</a></footer>
         </article>
         <article id="preview-fuel" class="preview-slide">
-          <picture><img src="./icons/fuel-features.svg" alt="Fuel Master demand controls, ride plan, and fueling allocation" loading="lazy"></picture>
+          <picture><source media="(max-width: 650px)" srcset="./icons/fuel-features-mobile.svg"><img src="./icons/fuel-features.svg" alt="Fuel Master demand controls, ride plan, and fueling allocation" loading="lazy"></picture>
           <footer><div><strong>Fuel Master</strong><span>Convert the execution plan into bottles, gels, and instructions.</span></div><a href="./fuel-master.html">Open tool →</a></footer>
         </article>
       </div>
     </section>
   </main>
   <footer class="site-footer">&copy; 2026 psychobolt &middot; Licensed under the <a href="./LICENSE">MIT License</a>.</footer>
+  <script src="./scripts/utils/model-config.js"></script>
 </body>
 </html>

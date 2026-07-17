@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" role="img" aria-labelledby="title desc">
+  <title id="title">Power Master mobile feature illustration</title>
+  <desc id="desc">Compact mobile Power Master cards with a collapsible power target, large watt controls, summary values, and stem dashboard preview.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#263238"/><stop offset="1" stop-color="#102027"/></linearGradient></defs>
+  <rect width="400" height="500" rx="22" fill="url(#bg)"/>
+  <circle cx="358" cy="52" r="78" fill="#ef6c00" opacity=".14"/>
+  <g font-family="Arial,sans-serif">
+    <rect x="18" y="18" width="364" height="304" rx="15" fill="#fff"/>
+    <rect x="18" y="18" width="364" height="48" rx="15" fill="#f5f5f5"/>
+    <rect x="18" y="50" width="364" height="16" fill="#f5f5f5"/>
+    <rect x="32" y="32" width="6" height="22" fill="#006064"/>
+    <text x="50" y="49" font-size="15" font-weight="900" fill="#455a64">POWER TARGETS</text>
+    <text x="350" y="49" text-anchor="end" font-size="18" font-weight="800" fill="#607d8b">⌃</text>
+
+    <rect x="32" y="80" width="336" height="224" rx="12" fill="#fafafa" stroke="#cfd8dc"/>
+    <circle cx="48" cy="100" r="2.5" fill="#78909c"/><circle cx="48" cy="110" r="2.5" fill="#78909c"/><circle cx="48" cy="120" r="2.5" fill="#78909c"/>
+    <text x="65" y="99" font-size="10" font-weight="800" fill="#546e7a">LABEL</text>
+    <rect x="65" y="106" width="164" height="38" rx="6" fill="#fff" stroke="#b0bec5"/>
+    <text x="77" y="131" font-size="17" font-weight="900" fill="#263238">4% CLM</text>
+    <circle cx="248" cy="125" r="15" fill="#fff3e0" stroke="#ef6c00"/><circle cx="248" cy="125" r="7" fill="#ef6c00"/>
+    <text x="275" y="119" font-size="9" font-weight="800" fill="#546e7a">DURATION</text>
+    <text x="275" y="137" font-size="16" font-weight="900" fill="#263238">30 min</text>
+
+    <text x="65" y="166" font-size="10" font-weight="800" fill="#546e7a">TARGET POWER</text>
+    <rect x="65" y="174" width="76" height="40" rx="6" fill="#fff" stroke="#ef6c00" stroke-width="2"/>
+    <text x="84" y="200" font-size="18" font-weight="900" fill="#e65100">212</text>
+    <rect x="153" y="191" width="178" height="7" rx="4" fill="#cfd8dc"/>
+    <rect x="153" y="191" width="112" height="7" rx="4" fill="#ef6c00"/>
+    <circle cx="265" cy="194.5" r="13" fill="#ef6c00" stroke="#fff" stroke-width="3"/>
+
+    <rect x="65" y="229" width="126" height="38" rx="6" fill="#e3f2fd" stroke="#1976d2"/>
+    <text x="78" y="253" font-size="13" font-weight="900" fill="#0d47a1">TARGET MODE</text>
+    <rect x="203" y="229" width="128" height="38" rx="6" fill="#fff" stroke="#b0bec5"/>
+    <text x="216" y="253" font-size="14" font-weight="800" fill="#263238">80 rpm · climb</text>
+    <text x="65" y="290" font-size="11" font-weight="700" fill="#607d8b">Tap once to edit · collapse · reorder</text>
+
+    <rect x="18" y="338" width="174" height="144" rx="14" fill="#e0f7fa"/>
+    <text x="32" y="362" font-size="10" font-weight="900" fill="#006064">PLAN SUMMARY</text>
+    <text x="32" y="394" font-size="12" fill="#455a64">Weighted power</text><text x="32" y="418" font-size="24" font-weight="900" fill="#006064">184 W</text>
+    <text x="32" y="446" font-size="12" fill="#455a64">Estimated IF</text><text x="126" y="446" font-size="18" font-weight="900" fill="#006064">0.86</text>
+    <text x="32" y="468" font-size="11" fill="#455a64">Duration-weighted targets</text>
+
+    <rect x="208" y="338" width="174" height="144" rx="14" fill="#eceff1" stroke="#90a4ae"/>
+    <text x="222" y="362" font-size="10" font-weight="900" fill="#455a64">STEM DASHBOARD</text>
+    <rect x="263" y="374" width="66" height="94" fill="#fff" stroke="#455a64" stroke-dasharray="4 3"/>
+    <text x="274" y="388" font-size="7" font-weight="900">AVG 184W</text>
+    <rect x="265" y="395" width="62" height="19" fill="#f3e5f5"/><text x="269" y="408" font-size="7" font-weight="800" fill="#4a148c">XW 197–223</text>
+    <rect x="265" y="414" width="62" height="19" fill="#fff3e0"/><text x="269" y="427" font-size="7" font-weight="800" fill="#e65100">CLM 212</text>
+    <rect x="265" y="433" width="62" height="19" fill="#e3f2fd"/><text x="269" y="446" font-size="7" font-weight="800" fill="#0d47a1">REC 107</text>
+  </g>
+</svg>

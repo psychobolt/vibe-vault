@@ -179,6 +179,10 @@ function normalizePlan(input = {}) {
   plan.powerTargets = Array.isArray(input.powerTargets)
     ? input.powerTargets.map(normalizePowerTarget)
     : [];
+  const targetIds = new Set(plan.powerTargets.map((row) => row.id));
+  plan.powerTargets.forEach((row) => {
+    if (row.overlapWith === row.id || !targetIds.has(row.overlapWith)) row.overlapWith = "";
+  });
 
   for (const key of Object.keys(plan.athlete)) plan.athlete[key] = finite(plan.athlete[key]);
   for (const key of ["distanceKm", "elevationGainM", "movingDurationMinutes", "stoppedDurationMinutes", "climbingDurationMinutes", "declineDurationMinutes"]) {
@@ -212,16 +216,41 @@ function normalizePowerTarget(target = {}, index = 0) {
     minPower: wholeNumber(target.minPower),
     targetPower: wholeNumber(target.targetPower),
     maxPower: wholeNumber(target.maxPower),
-    powerMode: ["target", "range"].includes(target.powerMode) ? target.powerMode : inferredMode,
+    powerMode: ["target", "range", "speed"].includes(target.powerMode) ? target.powerMode : inferredMode,
+    targetSpeedKph: Math.max(0, roundTo(finite(target.targetSpeedKph), 1)),
     cadence: String(target.cadence || ""),
     durationMinutes: Math.max(0, roundTo(finite(target.durationMinutes), 1)),
     durationValue: Math.max(0, roundDurationValue(finite(target.durationValue, target.durationMinutes), target.durationUnit)),
     durationUnit: ["seconds", "minutes", "hours"].includes(target.durationUnit) ? target.durationUnit : "minutes",
+    durationEnabled: target.durationEnabled !== false,
+    overlapWith: target.overlapWith ? String(target.overlapWith) : "",
+    visibleInDashboard: target.visibleInDashboard !== false,
     textColor: String(target.textColor || "#111827"),
     backgroundColor: String(target.backgroundColor || "#ffffff"),
     source: target.source ? String(target.source) : null,
     sourceProfile: target.sourceProfile ? String(target.sourceProfile) : null,
   };
+}
+
+// A Speed target represents a restart/ramp segment. It estimates the average
+// mechanical power needed to accelerate the loaded system from rest to the
+// requested speed during the row duration, then adds rolling and aerodynamic
+// resistance. It is intentionally an estimate; stop time itself belongs in
+// Fuel Master's stopped-duration field.
+function estimatePowerForSpeed(plan, target) {
+  const seconds = Math.max(1, finite(target.durationMinutes) * 60);
+  const speedKph = Math.max(0, finite(target.targetSpeedKph));
+  const speed = speedKph / 3.6;
+  if (!(speed > 0)) return 0;
+  const settings = model("routePhysics.mechanicalPower");
+  const mass = totalSystemMassKg(plan);
+  const gravity = settings.gravityMps2;
+  const rolling = plan.resistance.crr * mass * gravity * speed;
+  const aero = 0.5 * settings.airDensityKgM3 * plan.resistance.cda * Math.pow(speed, 3);
+  const terrainGrade = target.terrain === "climb" ? 0.04 : target.terrain === "incline" ? 0.015 : target.terrain === "decline" ? -0.015 : 0;
+  const grade = mass * gravity * terrainGrade * speed;
+  const acceleration = (0.5 * mass * speed * speed) / seconds;
+  return Math.max(0, wholeNumber((rolling + aero + grade + acceleration) / settings.drivetrainEfficiency));
 }
 
 function totalSystemMassKg(plan) {
@@ -244,28 +273,68 @@ function targetPower(target) {
 }
 
 function durationWeightedAveragePower(plan) {
-  const timed = plan.powerTargets.filter((row) => row.durationMinutes > 0 && targetPower(row) > 0);
-  const minutes = timed.reduce((sum, row) => sum + row.durationMinutes, 0);
+  const timed = effectiveTargetDurations(plan).filter(({ row, minutes }) => minutes > 0 && targetPower(row) > 0);
+  const minutes = timed.reduce((sum, item) => sum + item.minutes, 0);
   if (!minutes) return 0;
-  return timed.reduce((sum, row) => sum + targetPower(row) * row.durationMinutes, 0) / minutes;
+  return timed.reduce((sum, item) => sum + targetPower(item.row) * item.minutes, 0) / minutes;
 }
 
 function estimatedWorkload(plan) {
   const threshold = plan.athlete.thresholdPower;
   if (threshold <= 0) return 0;
-  const assignedMinutes = plan.powerTargets.reduce((sum, row) => {
-    return targetPower(row) > 0 ? sum + Math.max(0, row.durationMinutes) : sum;
-  }, 0);
-  // Detailed condition rows sometimes overlap (for example, a climb can also
-  // be a headwind). Scale their combined exposure to the authoritative route
-  // moving duration so workload cannot count the same ride minutes twice.
+  const timed = effectiveTargetDurations(plan).filter(({ row, minutes }) => minutes > 0 && targetPower(row) > 0);
+  const assignedMinutes = timed.reduce((sum, item) => sum + item.minutes, 0);
+  // Scale the effective, non-duplicated exposure to the authoritative route
+  // moving duration when a route supplies a slightly different total.
   const durationScale = assignedMinutes > 0 && plan.route.movingDurationMinutes > 0
     ? plan.route.movingDurationMinutes / assignedMinutes
     : 1;
-  return plan.powerTargets.reduce((sum, row) => {
-    const hours = row.durationMinutes * durationScale / 60;
-    return sum + thresholdRelativeWorkload(targetPower(row), threshold, hours);
+  return timed.reduce((sum, item) => {
+    const hours = item.minutes * durationScale / 60;
+    return sum + thresholdRelativeWorkload(targetPower(item.row), threshold, hours);
   }, 0);
+}
+
+function durationCounts(row) {
+  return row.durationEnabled !== false && !row.overlapWith;
+}
+
+// Overlap rows describe a condition occurring during another target (for
+// example, a climb during a crosswind section). They must not add moving time,
+// but their watts and cadence still replace the same number of parent minutes
+// in weighted metrics. Nested overlaps are supported, and sibling overlaps are
+// proportionally capped when their requested time exceeds the parent window.
+function effectiveTargetDurations(plan) {
+  const rows = Array.isArray(plan.powerTargets) ? plan.powerTargets : [];
+  const enabled = rows.filter((row) => row.durationEnabled !== false);
+  const byParent = new Map();
+  enabled.forEach((row) => {
+    if (!row.overlapWith) return;
+    const children = byParent.get(row.overlapWith) || [];
+    children.push(row);
+    byParent.set(row.overlapWith, children);
+  });
+
+  const result = [];
+  const allocate = (row, availableMinutes, ancestry = new Set()) => {
+    const available = Math.max(0, Number(availableMinutes) || 0);
+    if (!available || ancestry.has(row.id)) return;
+    const nextAncestry = new Set(ancestry).add(row.id);
+    const children = (byParent.get(row.id) || []).filter((child) => !nextAncestry.has(child.id));
+    const requested = children.reduce((sum, child) => sum + Math.max(0, Number(child.durationMinutes) || 0), 0);
+    const childScale = requested > available && requested > 0 ? available / requested : 1;
+    const allocatedChildren = children.map((child) => ({
+      row: child,
+      minutes: Math.max(0, Number(child.durationMinutes) || 0) * childScale,
+    }));
+    const childMinutes = allocatedChildren.reduce((sum, item) => sum + item.minutes, 0);
+    const ownMinutes = Math.max(0, available - childMinutes);
+    if (ownMinutes > 0) result.push({ row, minutes: ownMinutes });
+    allocatedChildren.forEach((item) => allocate(item.row, item.minutes, nextAncestry));
+  };
+
+  enabled.filter((row) => !row.overlapWith).forEach((row) => allocate(row, row.durationMinutes));
+  return result;
 }
 
 function thresholdRelativeWorkload(averagePower, thresholdPower, hours) {
@@ -357,7 +426,7 @@ global.VeloPlanning = {
   PLAN_SCHEMA_VERSION, PROFILES, RESISTANCE_PRESETS, DEFAULT_POWER_TARGETS, PROFILE_TARGET_TEMPLATES,
   createDefaultPlan, createDefaultPowerTargets, createProfilePowerTargets, clone,
   normalizePlan, normalizePowerTarget, totalSystemMassKg, elapsedDurationMinutes,
-  targetPower, durationWeightedAveragePower, estimatedWorkload, combinedDemand,
+  targetPower, durationCounts, effectiveTargetDurations, durationWeightedAveragePower, estimatedWorkload, combinedDemand, estimatePowerForSpeed,
   thresholdRelativeWorkload,
   deriveDemandProfile, applyProfileDemandSuggestions, estimateMechanicalPower, calculateDemandFromTargetDuration, deriveTargetDurationProfile, conversions,
 };

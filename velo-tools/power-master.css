@@ -6,7 +6,7 @@
 .power-master-page .profile-action-buttons button:hover { background: #37474f; }
 .power-master-page .profile-action-buttons button + button { background: var(--color-danger); }
 .power-master-page .profile-action-buttons button + button:hover { background: #8e0000; }
-.power-master-page .profile-duration-control { display: grid; grid-template-columns: minmax(150px, 1fr) 54px; align-items: stretch; gap: 4px; min-width: 0; }
+.power-master-page .profile-duration-control { display: grid; grid-template-columns: minmax(150px, 1fr) 72px; align-items: stretch; gap: 4px; min-width: 0; }
 .power-master-page .profile-duration-control .number-slider-row { grid-template-columns: minmax(54px, 1fr) 52px; }
 .power-master-page .profile-targets > .field { grid-template-rows: 16px 36px; gap: 4px; align-self: end; }
 .power-master-page .profile-targets > .field > span { height: 16px; min-height: 16px; line-height: 16px; }
@@ -148,9 +148,12 @@
 .power-master-page .target-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
 .power-master-page .target-row input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
 .power-master-page .target-row input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
-.power-master-page .duration-control { display: grid; grid-template-columns: minmax(44px, 1fr) 50px; gap: 5px; align-items: stretch; }
+.power-master-page .duration-control { display: grid; grid-template-columns: minmax(44px, 1fr) 50px 42px; gap: 5px; align-items: stretch; }
 .power-master-page .duration-control .number-slider-row { grid-template-columns: minmax(26px, 1fr) 42px; gap: 4px; align-items: stretch; }
 .power-master-page .duration-control select { height: 32px; min-height: 32px; padding-left: 4px !important; padding-right: 16px !important; background-position: calc(100% - 8px) 50%, calc(100% - 4px) 50%; }
+.power-master-page .duration-enabled { display: flex; align-items: center; justify-content: center; gap: 2px; min-width: 0; color: var(--color-text-muted); font-size: 9px; font-weight: 800; white-space: nowrap; }
+.power-master-page .duration-enabled-label { font-size: 8px; line-height: 1; }
+.power-master-page .duration-enabled input { width: auto !important; min-width: 14px !important; height: 14px !important; min-height: 14px !important; margin: 0; }
 .power-master-page .target-actions { display: inline-flex; grid-column: 13 / 16; grid-row: 1; align-self: end; justify-self: end; align-items: center; gap: 0; }
 .power-master-page .pin-target,
 .power-master-page .reset-target,
@@ -184,11 +187,11 @@
 .power-master-page .pinned-section-dock > .target-row .remove-target { width: 20px; min-width: 20px; min-height: 22px; }
 .power-master-page .pinned-section-dock > .target-row .target-actions svg { width: 15px; height: 15px; }
 
-/* Pinning the complete Power Targets section uses the same compact rows as an
+/* Pinning the complete Pacing Targets section uses the same compact rows as an
    individually pinned target; clipping desktop rows would hide editable data. */
 .power-master-page .pinned-section-dock #section-power-targets .profile-targets { grid-template-columns: minmax(0, 1fr); }
 .power-master-page .pinned-section-dock #section-power-targets .profile-action-buttons { grid-column: 1; }
-.power-master-page .pinned-section-dock #section-power-targets .profile-duration-control { grid-template-columns: minmax(0, 1fr) 54px; width: 100%; }
+.power-master-page .pinned-section-dock #section-power-targets .profile-duration-control { grid-template-columns: minmax(0, 1fr) 72px; width: 100%; }
 .power-master-page .pinned-section-dock #section-power-targets .target-row { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; align-items: end; }
 .power-master-page .pinned-section-dock #section-power-targets .target-row .target-leading-controls { display: grid; grid-column: 1; grid-row: 1 / 5; justify-self: start; }
 .power-master-page .pinned-section-dock #section-power-targets .target-row .target-field--label { grid-column: 2 / 5; grid-row: 1; }
@@ -214,6 +217,15 @@
   .power-master-page .preview-wrap { position: static; width: 100%; }
   .power-master-page .preview-viewport { max-height: none; }
 }
+
+/* Keep the dashboard wide enough for its action group and controls on desktop. */
+@media (min-width: 980px) {
+  .power-master-page .workspace { grid-template-columns: minmax(0, 1fr) minmax(310px, 370px); }
+}
+
+.power-master-page .section-actions { flex-wrap: wrap; max-width: 100%; justify-content: flex-end; row-gap: 2px; }
+.power-master-page #section-stem-dashboard > summary.section-title .section-heading > span { white-space: nowrap; }
+.power-master-page #section-stem-dashboard > summary.section-title .section-actions { min-width: 0; }
 
 @media (max-width: 820px) {
   .power-master-page .profile-targets { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 8px; }
@@ -253,8 +265,141 @@
   .power-master-page .target-row .field > span { display: block; font-size: 9px; }
   .power-master-page .target-row .field input,
   .power-master-page .target-row .field select { font-size: 12px; }
-  .power-master-page .duration-control { grid-template-columns: minmax(0, 1fr) 48px; }
+  .power-master-page .duration-control { grid-template-columns: minmax(0, 1fr) 48px 40px; }
   .power-master-page .target-row input[type="color"] { width: 28px; min-width: 28px; height: 28px; min-height: 28px; }
+}
+
+/* Mobile rows use one explicit eight-column grid; implicit columns were the
+   source of the label/action and color-control overflow in compact views. */
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) {
+    grid-template-columns: 26px repeat(7, minmax(0, 1fr)) !important;
+    gap: 5px;
+    padding: 8px 6px;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 6 !important; grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions { grid-column: 6 / 9 !important; grid-row: 1 !important; justify-self: end; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 2 / 4 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 4 / 6 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 6 / 9 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 6 / 9 !important; grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 2 !important; grid-row: 4 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 3 !important; grid-row: 4 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 2 / 6 !important; grid-row: 6 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power { grid-column: 2 / 5 !important; grid-row: 5 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power { grid-column: 5 / 9 !important; grid-row: 5 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 2 / 5 !important; grid-row: 5 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 5 / 9 !important; grid-row: 5 !important; }
+}
+
+/* Final compact row map: label → terrain → power mode → cadence → colors.
+   Duration and overlap controls stay on the second line, while the left gutter
+   remains reserved for ordering and row actions at every breakpoint. */
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 6; grid-row: 1; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 6 / 8; grid-row: 1; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 8 / 10; grid-row: 1; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 10 / 12; grid-row: 1; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 12; grid-row: 1; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 13; grid-row: 1; margin-left: 0; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-actions { grid-column: 14 / 16; grid-row: 1; align-self: start; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power { grid-column: 4 / 7; grid-row: 2; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power { grid-column: 4 / 7; grid-row: 2; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power { grid-column: 7 / 10; grid-row: 2; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 10 / 13; grid-row: 2; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 13 / 16; grid-row: 2; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap select { min-width: 0; }
+.power-master-page #target-list .target-row.is-collapsed .target-field--overlap { display: none; }
+
+/* Speed-mode rows keep the computed ramp wattage in the same slot as Target W. */
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 10; grid-row: 2; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--target-speed-kph,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 9; grid-row: 3; }
+
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 2 / 5; grid-row: 5; }
+  .power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--target-speed-kph,
+  .power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 9; grid-row: 3; }
+}
+
+/* Pinned rows use the same reading order as the editor, but a compact eight-
+   column grid prevents controls from collapsing into one another. */
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed),
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) {
+  grid-template-columns: 26px repeat(7, minmax(0, 1fr));
+  grid-template-rows: repeat(4, auto);
+  gap: 6px;
+  align-items: end;
+}
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-leading-controls,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-leading-controls { grid-column: 1; grid-row: 1 / 5; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--label,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 5; grid-row: 1; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-actions,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-actions { grid-column: 5 / 9; grid-row: 1; justify-self: end; align-self: start; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--terrain,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 2 / 4; grid-row: 2; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--overlap,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 4 / 6; grid-row: 2; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--cadence,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 6 / 9; grid-row: 2; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--power-mode,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 2 / 4; grid-row: 3; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--target-power,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--target-power,
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--target-speed-kph,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 9; grid-row: 3; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--min-power,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--min-power { grid-column: 4 / 6; grid-row: 3; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--max-power,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--max-power { grid-column: 6 / 9; grid-row: 3; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--duration,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--duration { grid-column: 2 / 5; grid-row: 4; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--text-color,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 5; grid-row: 4; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--background-color,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 6; grid-row: 4; }
+
+@media (max-width: 820px) {
+  .power-master-page .pinned-section-dock > .target-row:not(.is-collapsed),
+  .power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) { min-width: 400px; }
+}
+
+.power-master-page .alignment-status-fit,
+.power-master-page .metric-action--fit { display: grid; place-items: center; align-content: center; padding: 0 0 2px; line-height: 1; }
+
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 6; grid-row: 1; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 2 / 4; grid-row: 2; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 4 / 6; grid-row: 2; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 6 / 9; grid-row: 2; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 6 / 9; grid-row: 3; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 2; grid-row: 4; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 3; grid-row: 4; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--actions { grid-column: 8 / 9; grid-row: 1; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power { grid-column: 2 / 5; grid-row: 5; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power { grid-column: 5 / 9; grid-row: 5; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 2 / 6; grid-row: 6; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions { grid-column: 8 / 9; grid-row: 1; align-self: start; }
+}
+
+/* Speed mode must occupy distinct cells across every later responsive map. */
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 7 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 7 / 10 !important; grid-row: 2 !important; }
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 2 / 5 !important; grid-row: 5 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 5 / 8 !important; grid-row: 5 !important; }
+}
+
+/* Final Speed-mode placement after the compact row map. */
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 7; grid-row: 2; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 7 / 10; grid-row: 2; }
+.power-master-page .target-leading-controls .clone-target { color:#006064; background:#e0f2f1; }
+.power-master-page .target-actions .dashboard-visibility[aria-pressed="false"] { color:#9aa8b1; opacity:.7; }
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 2 / 5; grid-row: 5; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 5 / 8; grid-row: 5; }
 }
 
 @media (max-width: 640px) {
@@ -263,7 +408,7 @@
   .power-master-page .duration-control select { padding-right: 16px !important; }
   .power-master-page .slider-row { grid-template-columns: minmax(0, 1fr) 58px; }
   .power-master-page .slider-value { width: 58px; }
-  .power-master-page .profile-duration-control { grid-template-columns: minmax(0, 1fr) 54px; }
+  .power-master-page .profile-duration-control { grid-template-columns: minmax(0, 1fr) 72px; }
   .power-master-page .profile-duration-control .number-slider-row,
   .power-master-page .target-row .number-slider-row,
   .power-master-page .duration-control .number-slider-row { grid-template-columns: minmax(0, 1fr) 46px; }
@@ -328,6 +473,10 @@
 .power-master-page .target-field--min-power .number-slider,
 .power-master-page .target-field--target-power .number-slider,
 .power-master-page .target-field--max-power .number-slider { grid-column: 2; grid-row: 1; }
+/* Terrain is intentionally before Power Mode in the row's DOM and grid. Keep
+   the two color swatches visually grouped at the end without changing the
+   wider spacing used by the editable power controls. */
+.power-master-page .target-field--background-color { margin-left: -4px; }
 .power-master-page .target-row input,
 .power-master-page .target-row select { touch-action: manipulation; }
 .power-master-page .target-row input:not([type="range"]):not([type="color"]) { user-select: text; }
@@ -445,6 +594,10 @@
   grid-column: 4 / 10;
   grid-row: 2;
 }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph {
+  grid-column: 4 / 10;
+  grid-row: 2;
+}
 .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power {
   grid-column: 4 / 7;
   grid-row: 2;
@@ -488,6 +641,8 @@
 .power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 2 / 4; grid-row: 3; }
 .power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--target-power,
 .power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--target-power { grid-column: 4 / 9; grid-row: 3; }
+.power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--target-speed-kph,
+.power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 9; grid-row: 3; }
 .power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--min-power,
 .power-master-page .pinned-section-dock #section-power-targets .target-row:not(.is-collapsed) .target-field--min-power { grid-column: 4 / 6; grid-row: 3; }
 .power-master-page .pinned-section-dock > .target-row:not(.is-collapsed) .target-field--max-power,
@@ -540,4 +695,677 @@
   .power-master-page .target-field--min-power .number-slider-row,
   .power-master-page .target-field--target-power .number-slider-row,
   .power-master-page .target-field--max-power .number-slider-row { grid-template-columns: 48px minmax(36px, 1fr); }
+}
+
+/* Current editor row layout: route timing first, then power and cadence.
+   The final action columns are reserved so controls never overlap inputs. */
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 6 !important; grid-row: 1 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) { grid-template-columns: 26px repeat(12, minmax(0, 1fr)) repeat(3, 28px) !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 6 / 8 !important; grid-row: 1 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 8 / 12 !important; grid-row: 1 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 12 / 14 !important; grid-row: 1 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-actions { grid-column: 14 / 17 !important; grid-row: 1 !important; align-self: start; justify-self: end; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 2 / 4 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power { grid-column: 4 / 7 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power { grid-column: 7 / 10 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 10 / 12 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 12 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 13 !important; grid-row: 2 !important; margin-left: -5px; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap select { min-width: 0; }
+.power-master-page #target-list .target-row.is-collapsed .target-field--overlap { display: none; }
+
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 6 !important; grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions { grid-column: 6 / 9 !important; grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 2 / 4 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 4 / 7 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 7 / 9 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 2 / 4 !important; grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power { grid-column: 4 / 7 !important; grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power { grid-column: 7 / 9 !important; grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 7 !important; grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 7 / 9 !important; grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 2 / 6 !important; grid-row: 4 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 6 !important; grid-row: 4 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 7 !important; grid-row: 4 !important; }
+}
+
+/* Mobile target-row safety net.
+   Keep the reorder/edit gutter independent from the editor fields.  A number
+   of older responsive maps above intentionally remain for pinned rows and
+   legacy saved layouts; this final map is the authoritative layout for the
+   live editor and uses explicit columns so fields cannot create implicit
+   columns or bleed into the action area at 360/414px. */
+.power-master-page #target-list .target-row:not(.is-collapsed) {
+  grid-template-columns: 30px repeat(12, minmax(0, 1fr)) 28px 28px !important;
+  grid-auto-flow: row;
+  grid-auto-rows: minmax(32px, auto);
+  column-gap: 6px;
+  row-gap: 7px;
+  min-height: 146px;
+  align-items: start;
+  overflow: visible;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls {
+  grid-column: 1 !important;
+  grid-row: 1 / -1 !important;
+  display: grid;
+  grid-template-columns: 26px;
+  grid-template-rows: repeat(5, 24px);
+  align-content: start;
+  align-self: start;
+  width: 26px;
+  min-width: 26px;
+  height: auto;
+  gap: 0;
+  z-index: 2;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .drag-handle { grid-row: 1; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility { grid-row: 2; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target { grid-row: 3; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .reset-target { grid-row: 4; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .remove-target { grid-row: 5; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls button,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility {
+  width: 26px;
+  min-width: 26px;
+  height: 24px;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-control-border);
+  border-radius: 0;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target {
+  color: var(--color-icon) !important;
+  background: transparent !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility:hover,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target:hover {
+  color: var(--color-icon) !important;
+  background: var(--color-panel-muted) !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .remove-target {
+  border-radius: 0 0 5px 5px;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-actions {
+  grid-column: 14 / 16 !important;
+  grid-row: 1 !important;
+  display: grid;
+  grid-template-columns: repeat(2, 28px);
+  justify-content: end;
+  align-items: start;
+  gap: 2px;
+  width: 58px;
+  min-width: 58px;
+  margin: 0;
+  z-index: 2;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-actions > * {
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  margin: 0;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 7 !important; grid-row: 1 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 7 / 9 !important; grid-row: 1 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 9 / 13 !important; grid-row: 1 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 13 / 14 !important; grid-row: 1 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 2 / 4 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power { grid-column: 4 / 7 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 7 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 7 / 10 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 10 / 12 !important; grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 12 !important; grid-row: 2 !important; margin: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 13 !important; grid-row: 2 !important; margin: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap select,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain select,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode select { min-width: 0; }
+
+/* Keep the two neutral action buttons visually identical to the rest of the
+   icon controls even when their source button carries an old color class. */
+.power-master-page #target-list .dashboard-visibility,
+.power-master-page #target-list .clone-target {
+  color: var(--color-icon) !important;
+  background: transparent !important;
+}
+.power-master-page #target-list .dashboard-visibility:hover:not(:disabled),
+.power-master-page #target-list .clone-target:hover:not(:disabled) {
+  color: var(--color-primary) !important;
+  background: var(--color-panel-muted) !important;
+}
+
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) {
+    grid-template-columns: 24px repeat(7, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(4, minmax(38px, auto));
+    column-gap: 5px;
+    row-gap: 7px;
+    min-height: 178px;
+    padding: 9px 7px 10px;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls {
+    grid-column: 1 !important;
+    grid-row: 1 / -1 !important;
+    grid-template-rows: repeat(7, 20px);
+    width: 22px;
+    min-width: 22px;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .drag-handle { display: none; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control { display: grid; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control[data-move-direction="-1"] { grid-row: 1; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control[data-move-direction="1"] { grid-row: 2; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility { grid-row: 3; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target { grid-row: 4; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .reset-target { grid-row: 5; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .remove-target { grid-row: 6; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls button,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility {
+    width: 22px;
+    min-width: 22px;
+    height: 20px;
+    min-height: 20px;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions {
+    grid-column: 7 / 9 !important;
+    grid-row: 1 !important;
+    grid-template-columns: repeat(2, 24px);
+    width: 50px;
+    min-width: 50px;
+    gap: 2px;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions > * {
+    width: 24px;
+    min-width: 24px;
+    min-height: 26px;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 6 !important; grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 2 / 4 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 4 / 7 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 7 / 9 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 2 / 4 !important; grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 7 !important; grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 7 / 9 !important; grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 2 / 5 !important; grid-row: 4 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 5 !important; grid-row: 4 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 6 !important; grid-row: 4 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { justify-items: center; min-width: 0; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color > span,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color > span { font-size: 8px; letter-spacing: -.15px; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-control { grid-template-columns: minmax(0, 1fr) 42px 32px !important; column-gap: 3px; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-control .number-slider-row { grid-template-columns: minmax(30px, 1fr) 40px; gap: 2px; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-enabled { font-size: 8px; gap: 1px; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-enabled-label { font-size: 8px; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power .number-slider-row,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power .number-slider-row,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power .number-slider-row { grid-template-columns: 48px minmax(24px, 1fr); gap: 3px; }
+}
+
+@media (max-width: 380px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) {
+    grid-template-columns: 22px repeat(7, minmax(0, 1fr)) !important;
+    column-gap: 4px;
+    padding-inline: 6px;
+    min-height: 184px;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls button,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility { width: 20px; min-width: 20px; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions { grid-template-columns: repeat(2, 22px); width: 46px; min-width: 46px; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions > * { width: 22px; min-width: 22px; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 6 !important; }
+}
+
+/* Target-row action gutter: keep row visibility and cloning controls with the
+   ordering/reset controls on the left.  The target-actions group then only
+   contains pin/collapse controls, so it cannot compete with editable fields.
+   The neutral treatment intentionally avoids implying that visibility/copy
+   changes the power plan. */
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls {
+  grid-row: 1 / -1 !important;
+  grid-template-columns: 26px !important;
+  grid-template-rows: repeat(6, minmax(22px, auto)) !important;
+  align-self: stretch !important;
+  min-height: 132px;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target {
+  color: var(--color-icon) !important;
+  background: var(--color-panel-muted) !important;
+  border-color: var(--color-control-border) !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility:hover:not(:disabled),
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target:hover:not(:disabled) {
+  color: var(--color-icon) !important;
+  background: var(--color-panel) !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility[aria-pressed="false"] {
+  color: var(--color-icon) !important;
+  opacity: .62;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) {
+  min-height: 140px;
+  align-items: start;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-actions {
+  align-self: start !important;
+  z-index: 2;
+}
+/* Collapsed rows intentionally retain only reorder, reset/delete, and the
+   disclosure control.  Eye/copy are content actions and stay out of the
+   compact collapsed row. */
+.power-master-page #target-list .target-row.is-collapsed .dashboard-visibility,
+.power-master-page #target-list .target-row.is-collapsed .clone-target {
+  display: none !important;
+}
+
+/* Pinned target rows leave #target-list, so keep the same neutral treatment
+   and collapsed action contract in the floating dock as well. */
+.power-master-page .target-row .target-leading-controls .dashboard-visibility,
+.power-master-page .target-row .target-leading-controls .clone-target {
+  color: var(--color-icon) !important;
+  background: var(--color-panel-muted) !important;
+  border-color: var(--color-control-border) !important;
+}
+.power-master-page .target-row .target-leading-controls .dashboard-visibility:hover:not(:disabled),
+.power-master-page .target-row .target-leading-controls .clone-target:hover:not(:disabled) {
+  color: var(--color-icon) !important;
+  background: var(--color-panel) !important;
+}
+.power-master-page .target-row.is-collapsed .dashboard-visibility,
+.power-master-page .target-row.is-collapsed .clone-target {
+  display: none !important;
+}
+.power-master-page .pinned-section-dock .target-row:not(.is-collapsed) .target-leading-controls {
+  grid-row: 1 / -1 !important;
+  grid-template-columns: 26px !important;
+  grid-template-rows: repeat(6, minmax(22px, auto)) !important;
+  min-height: 132px;
+}
+
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls {
+    grid-row: 1 / -1 !important;
+    grid-template-columns: 22px !important;
+    grid-template-rows: repeat(6, 21px) !important;
+    width: 22px !important;
+    min-width: 22px !important;
+    min-height: 126px;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls button {
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 21px !important;
+    min-height: 21px !important;
+    margin: 0 !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target {
+    display: grid !important;
+    color: var(--color-icon) !important;
+    background: var(--color-panel-muted) !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) {
+    min-height: 140px !important;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions {
+    min-height: 28px;
+    align-items: start;
+  }
+  .power-master-page .pinned-section-dock .target-row:not(.is-collapsed) .target-leading-controls {
+    grid-row: 1 / -1 !important;
+    grid-template-columns: 22px !important;
+    grid-template-rows: repeat(6, 21px) !important;
+    width: 22px !important;
+    min-width: 22px !important;
+    min-height: 126px;
+  }
+}
+
+/* Restore the compact two-column reset/delete stack for collapsed rows; the
+   expanded six-button gutter above must not make a collapsed row tall. */
+.power-master-page #target-list .target-row.is-collapsed .target-leading-controls {
+  grid-template-columns: 26px 26px !important;
+  grid-template-rows: 23px 23px !important;
+  grid-column: 1 / 3 !important;
+  grid-row: 1 !important;
+  width: 55px !important;
+  min-width: 55px !important;
+  min-height: 0 !important;
+}
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row.is-collapsed .target-leading-controls {
+    grid-template-columns: 22px 22px !important;
+    grid-template-rows: 20px 20px !important;
+    grid-column: 1 / 3 !important;
+    grid-row: 1 !important;
+    width: 47px !important;
+    min-width: 47px !important;
+    min-height: 0 !important;
+  }
+}
+
+/* Final mobile/compact target-row map.  Keep this at EOF so it wins over the
+   historical responsive maps above.  The fixed left and right gutters leave
+   seven fluid editor columns between them, preventing implicit columns and
+   controls from clipping at 360px/414px. */
+.power-master-page #target-list .target-row:not(.is-collapsed) {
+  grid-template-columns: 24px repeat(7, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(4, minmax(38px, auto)) !important;
+  grid-auto-flow: row !important;
+  column-gap: 5px !important;
+  row-gap: 7px !important;
+  min-height: 178px !important;
+  height: auto !important;
+  overflow: visible !important;
+  align-items: start !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls {
+  grid-column: 1 !important;
+  grid-row: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: 22px !important;
+  grid-template-rows: repeat(7, 20px) !important;
+  align-content: start !important;
+  align-self: start !important;
+  width: 22px !important;
+  min-width: 22px !important;
+  min-height: 140px !important;
+  height: auto !important;
+  gap: 0 !important;
+  z-index: 3 !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .drag-handle { display: none !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control { display: grid !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control[data-move-direction="-1"] { grid-row: 1 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control[data-move-direction="1"] { grid-row: 2 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility { grid-row: 3 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target { grid-row: 4 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .reset-target { grid-row: 5 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .remove-target { grid-row: 6 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls button,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility {
+  width: 22px !important;
+  min-width: 22px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid var(--color-control-border) !important;
+  border-radius: 0 !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target {
+  color: var(--color-icon) !important;
+  background: transparent !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility:hover:not(:disabled),
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target:hover:not(:disabled) {
+  color: var(--color-icon) !important;
+  background: var(--color-panel-muted) !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-actions {
+  grid-column: 7 / 9 !important;
+  grid-row: 1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, 24px) !important;
+  justify-content: end !important;
+  align-items: start !important;
+  gap: 2px !important;
+  width: 50px !important;
+  min-width: 50px !important;
+  min-height: 26px !important;
+  margin: 0 !important;
+  z-index: 3 !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-actions > * {
+  width: 24px !important;
+  min-width: 24px !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 6 !important; grid-row: 1 !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 2 / 4 !important; grid-row: 2 !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 4 / 7 !important; grid-row: 2 !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 7 / 9 !important; grid-row: 2 !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 2 / 4 !important; grid-row: 3 !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 7 !important; grid-row: 3 !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 7 / 9 !important; grid-row: 3 !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 2 / 5 !important; grid-row: 4 !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 5 !important; grid-row: 4 !important; min-width: 0 !important; margin: 0 !important; justify-items: center !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 6 !important; grid-row: 4 !important; min-width: 0 !important; margin: 0 !important; justify-items: center !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color > span,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color > span { font-size: 8px !important; letter-spacing: -.15px; text-align: center; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .duration-control { grid-template-columns: minmax(0, 1fr) 42px 32px !important; column-gap: 3px !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .duration-control .number-slider-row { grid-template-columns: minmax(30px, 1fr) 40px !important; gap: 2px !important; min-width: 0 !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .duration-enabled { font-size: 8px !important; gap: 1px !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .duration-enabled-label { font-size: 8px !important; }
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power .number-slider-row,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power .number-slider-row,
+.power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power .number-slider-row { grid-template-columns: 48px minmax(24px, 1fr) !important; gap: 3px !important; min-width: 0 !important; }
+
+@media (max-width: 380px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) {
+    grid-template-columns: 22px repeat(7, minmax(0, 1fr)) !important;
+    column-gap: 4px !important;
+    padding-inline: 6px !important;
+    min-height: 184px !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls button,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility { width: 20px !important; min-width: 20px !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions { grid-template-columns: repeat(2, 22px) !important; width: 46px !important; min-width: 46px !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions > * { width: 22px !important; min-width: 22px !important; }
+}
+
+/* Restore the wider desktop editor after the compact map above. */
+@media (min-width: 821px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) {
+    grid-template-columns: 30px repeat(12, minmax(0, 1fr)) 28px 28px !important;
+    grid-template-rows: repeat(2, minmax(40px, auto)) !important;
+    column-gap: 6px !important;
+    row-gap: 7px !important;
+    min-height: 132px !important;
+    padding: 9px !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls {
+    grid-column: 1 !important;
+    grid-row: 1 / -1 !important;
+    grid-template-columns: 26px !important;
+    grid-template-rows: repeat(5, 24px) !important;
+    width: 26px !important;
+    min-width: 26px !important;
+    min-height: 120px !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .drag-handle { display: block !important; grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control { display: none !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility { grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target { grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .reset-target { grid-row: 4 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .remove-target { grid-row: 5 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls button,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility {
+    width: 26px !important;
+    min-width: 26px !important;
+    height: 24px !important;
+    min-height: 24px !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions {
+    grid-column: 15 / 16 !important;
+    grid-row: 1 !important;
+    grid-template-columns: 28px !important;
+    grid-template-rows: repeat(2, 28px) !important;
+    width: 28px !important;
+    min-width: 28px !important;
+    min-height: 58px !important;
+    align-content: start !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions > * { width: 28px !important; min-width: 28px !important; height: 28px !important; min-height: 28px !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 6 !important; grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 6 / 8 !important; grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 8 / 12 !important; grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 12 / 15 !important; grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 2 / 4 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 4 / 7 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 7 / 10 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 10 / 12 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 12 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 13 !important; grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-control {
+    grid-template-columns: minmax(0, 1fr) 62px 34px !important;
+    column-gap: 5px !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-control .number-slider-row {
+    grid-template-columns: minmax(48px, 1fr) 48px !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+  }
+}
+
+/* Final compact target-row layout.  Keep this block last: the stylesheet has
+   accumulated older responsive maps, and these selectors intentionally reset
+   them for the 360px/414px debug profiles.  The row uses a dedicated left
+   action gutter and a dedicated right disclosure gutter; all editable fields
+   stay inside the fluid columns between them. */
+@media (max-width: 820px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) {
+    grid-template-columns: 22px repeat(7, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(5, minmax(40px, auto)) !important;
+    grid-auto-flow: row !important;
+    column-gap: 4px !important;
+    row-gap: 7px !important;
+    min-height: 236px !important;
+    height: auto !important;
+    overflow: visible !important;
+    align-items: start !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls {
+    grid-column: 1 !important;
+    grid-row: 1 / -1 !important;
+    grid-template-columns: 20px !important;
+    grid-template-rows: repeat(6, 21px) !important;
+    width: 20px !important;
+    min-width: 20px !important;
+    min-height: 126px !important;
+    gap: 0 !important;
+    align-self: start !important;
+    z-index: 3 !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls button,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility {
+    width: 20px !important;
+    min-width: 20px !important;
+    height: 21px !important;
+    min-height: 21px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .drag-handle { display: none !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control { display: grid !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control[data-move-direction="-1"] { grid-row: 1 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .mobile-move-control[data-move-direction="1"] { grid-row: 2 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .dashboard-visibility { grid-row: 3 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .clone-target { grid-row: 4 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .reset-target { grid-row: 5 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-leading-controls .remove-target { grid-row: 6 !important; }
+
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions {
+    grid-column: 8 !important;
+    grid-row: 1 !important;
+    display: grid !important;
+    grid-template-columns: 22px !important;
+    grid-template-rows: repeat(2, 20px) !important;
+    justify-content: end !important;
+    align-items: start !important;
+    align-content: start !important;
+    gap: 2px 0 !important;
+    width: 22px !important;
+    min-width: 22px !important;
+    min-height: 42px !important;
+    margin: 0 !important;
+    z-index: 3 !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions > * {
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* First row: identity and disclosure actions. */
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--label { grid-column: 2 / 8 !important; grid-row: 1 !important; min-width: 0 !important; }
+  /* Second row: route condition and timing.  Duration gets four tracks so
+     its number, unit, and enabled checkbox never overlap. */
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--terrain { grid-column: 2 / 4 !important; grid-row: 2 !important; min-width: 0 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--duration { grid-column: 4 / 9 !important; grid-row: 2 !important; min-width: 0 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--overlap { grid-column: 2 / 5 !important; grid-row: 3 !important; min-width: 0 !important; }
+  /* Third/fourth rows: power mode first, then the active power controls. */
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--power-mode { grid-column: 5 / 7 !important; grid-row: 3 !important; min-width: 0 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph { grid-column: 2 / 6 !important; grid-row: 4 !important; min-width: 0 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--ramp-power { grid-column: 6 / 9 !important; grid-row: 4 !important; min-width: 0 !important; }
+  /* Last row: cadence and the two compact neutral color controls. */
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--cadence { grid-column: 2 / 5 !important; grid-row: 5 !important; min-width: 0 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color { grid-column: 5 / 7 !important; grid-row: 5 !important; min-width: 0 !important; margin: 0 !important; justify-items: center !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color { grid-column: 7 / 9 !important; grid-row: 5 !important; min-width: 0 !important; margin: 0 !important; justify-items: center !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--text-color > span,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--background-color > span { font-size: 8px !important; letter-spacing: -.15px; text-align: center; }
+
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-control {
+    grid-template-columns: minmax(0, 1fr) 58px 34px !important;
+    column-gap: 4px !important;
+    min-width: 0 !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-control > input,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-control > select,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-control > .duration-enabled { min-width: 0 !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .duration-control .number-slider-row {
+    grid-template-columns: minmax(38px, 1fr) 48px !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--min-power .number-slider-row,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-power .number-slider-row,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--max-power .number-slider-row,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-field--target-speed-kph .number-slider-row {
+    grid-template-columns: minmax(42px, 1fr) minmax(24px, 1fr) !important;
+    gap: 3px !important;
+    min-width: 0 !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .number-slider-row input,
+  .power-master-page #target-list .target-row:not(.is-collapsed) .number-slider-row input[type="range"] { min-width: 0 !important; }
+}
+
+@media (max-width: 380px) {
+  .power-master-page #target-list .target-row:not(.is-collapsed) {
+    grid-template-columns: 20px repeat(7, minmax(0, 1fr)) !important;
+    min-height: 242px !important;
+    padding-inline: 6px !important;
+    column-gap: 4px !important;
+  }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions { grid-template-columns: 20px !important; grid-template-rows: repeat(2, 20px) !important; width: 20px !important; min-width: 20px !important; }
+  .power-master-page #target-list .target-row:not(.is-collapsed) .target-actions > * { width: 20px !important; min-width: 20px !important; }
 }

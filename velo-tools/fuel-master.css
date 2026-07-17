@@ -86,6 +86,45 @@
 .fuel-master-page .equipment-card ul,
 .fuel-master-page .recipe-card ul,
 .fuel-master-page .recipe-card ol { margin: 0; padding-left: 20px; }
+.fuel-master-page .recipe-card ul { display: grid; gap: 8px; padding-left: 0; list-style: none; }
+.fuel-master-page .measure-instruction {
+  display: grid;
+  grid-template-columns: minmax(150px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #d7e2e7;
+  border-radius: 7px;
+  background: #f8fbfc;
+}
+.fuel-master-page .measure-visual { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-width: 0; }
+.fuel-master-page .measure-piece { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.fuel-master-page .measure-count { color: #00695c; font-size: 14px; white-space: nowrap; }
+.fuel-master-page .measure-plus { color: #78909c; font-weight: 900; }
+.fuel-master-page .measure-tool {
+  display: inline-grid;
+  grid-template-columns: 46px auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 34px;
+  padding: 3px 7px 3px 3px;
+  border: 1px solid #b0bec5;
+  border-radius: 17px 6px 6px 17px;
+  color: #37474f;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.fuel-master-page .measure-tool svg { display: block; width: 46px; height: 27px; }
+.fuel-master-page .measure-outline { fill: none; stroke: #607d8b; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.fuel-master-page .measure-fill { fill: #f6b73c; opacity: .9; }
+.fuel-master-page .measure-tool--liquid .measure-fill { fill: #42a5f5; }
+.fuel-master-page .measure-tool--scoop .measure-fill { fill: #ffcc80; }
+.fuel-master-page .measure-copy { display: grid; gap: 2px; min-width: 0; }
+.fuel-master-page .measure-copy strong { color: #37474f; font-size: 12px; }
+.fuel-master-page .measure-copy small { color: #607d8b; font-size: 10px; line-height: 1.35; }
 .fuel-master-page .target-badge { float: right; padding: 3px 6px; border-radius: var(--radius-sm); color: #b71c1c; background: #ffebee; font-size: 10px; }
 
 .fuel-master-page .ride-plan-section { margin-top: 13px; }
@@ -103,6 +142,7 @@
 @media (max-width: 640px) {
   .fuel-master-page .checklist-group { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
   .fuel-master-page .power-import-panel { grid-template-columns: 1fr; }
+  .fuel-master-page .measure-instruction { grid-template-columns: 1fr; gap: 6px; }
 }
 
 @media (max-width: 420px) {

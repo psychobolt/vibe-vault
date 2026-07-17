@@ -246,6 +246,25 @@
 .tool-page .pinned-section-dock .field-grid,
 .tool-page .pinned-section-dock .appearance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
+/* Athlete groups are already internally arranged in three columns. Keep each
+   group full-width when Step 1 is floating so Units, weights, and power do not
+   get auto-placed into competing half-width columns. */
+.tool-page .pinned-section-dock .field-grid.athlete-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+.tool-page .pinned-section-dock .field-grid.athlete-layout > .athlete-units-row,
+.tool-page .pinned-section-dock .field-grid.athlete-layout > .athlete-row {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 821px) {
+  .tool-page .pinned-section-dock > #section-athlete.is-section-pinned {
+    min-width: 720px;
+  }
+}
+
 .tool-page .pinned-section-dock details.collapsible-section > summary.section-title .section-heading::before { display: none; }
 
 .pinned-minimize-toggle { display: none !important; }
@@ -511,8 +530,17 @@
 .tool-page .metric-actions { display: grid; grid-template-columns: repeat(3, 30px); gap: 3px; justify-content: end; margin-top: 6px; }
 .tool-page .metric-action { display: grid; place-items: center; width: 30px; min-width: 30px; min-height: 26px; padding: 0; border-radius: 5px; color: #455a64; background: rgba(255, 255, 255, .78); font-size: 17px; font-weight: 850; }
 .tool-page .metric-action:hover { color: var(--color-primary); background: #fff; }
-.tool-page .metric-action--fit { color: #fff; background: var(--color-accent); }
+.tool-page .metric-action--fit { grid-column: 2; color: #fff; background: var(--color-accent); font-size: 24px; line-height: 1; }
 .tool-page .metric-action--fit:hover { color: #fff; background: var(--color-primary); }
+
+.tool-page .floating-status[data-kind="alignment-positive"] { border-color: #a5d6a7; background: #2e7d32; }
+.tool-page .floating-status[data-kind="alignment-negative"] { border-color: #ef9a9a; background: #c62828; }
+.tool-page .floating-status > span:first-child { display: inline-flex; align-items: center; gap: 4px; }
+.tool-page .floating-status > span:first-child strong { font-size: 1.05em; }
+.tool-page .alignment-status-actions { display: inline-grid; grid-template-columns: repeat(3, 28px); gap: 3px; margin-left: 10px; vertical-align: middle; }
+.tool-page .alignment-status-actions button { display: grid; place-items: center; width: 28px; min-width: 28px; height: 26px; padding: 0; border: 0; border-radius: 4px; color: #37474f; background: rgba(255, 255, 255, .9); font-size: 17px; font-weight: 900; line-height: 1; }
+.tool-page .alignment-status-actions button:hover { background: #fff; }
+.tool-page .alignment-status-actions .alignment-status-fit { grid-column: 2; height: 30px; font-size: 25px; }
 
 /* Small utility set for page composition; keep behavior out of tool markup. */
 .u-min-0 { min-width: 0; }
@@ -670,6 +698,17 @@
   }
   .tool-page .pinned-section-dock > :not(.is-floating-minimized):not(.is-section-fullscreen) { height: var(--mobile-card-height, auto) !important; }
   .pinned-resize-handle { display: grid; }
+}
+
+/* When a user expands a form section on a compact screen, the fixed tool
+   navigation temporarily gets out of the way. It returns as soon as the
+   section is collapsed or the user resizes back to the desktop layout. */
+@media (max-width: 820px) {
+  .tool-page.mobile-section-expanded .tool-sidebar {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+  }
 }
 
 @media (max-width: 420px) {

@@ -79,10 +79,12 @@ function renderPlanningUI(root, plan, {
 
   collapsedSections.forEach((id) => root.querySelector(`#${id}`)?.removeAttribute("open"));
   attachSectionLinks(root);
+  // Build slider/value pairs before a restored pin moves the section outside
+  // this planning root. Otherwise auto-pinned sections would keep bare number
+  // inputs until they were manually unpinned and rendered again.
+  enhanceNumberSliders(root);
   attachSectionPins(root);
   protectSummaryActions(root);
-
-  enhanceNumberSliders(root);
 
   root.onchange = (event) => {
     if (event.target.matches("[data-activity-file]")) {

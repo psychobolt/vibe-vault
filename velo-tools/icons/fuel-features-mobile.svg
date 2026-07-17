@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" role="img" aria-labelledby="title desc">
+  <title id="title">Fuel Master mobile feature illustration</title>
+  <desc id="desc">Compact mobile Fuel Master cards showing local power import, color-coded demand, bottle allocation, and gel instructions.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#004d40"/><stop offset="1" stop-color="#263238"/></linearGradient></defs>
+  <rect width="400" height="500" rx="22" fill="url(#bg)"/>
+  <circle cx="354" cy="430" r="105" fill="#00acc1" opacity=".12"/>
+  <g font-family="Arial,sans-serif">
+    <rect x="18" y="18" width="364" height="62" rx="13" fill="#fff"/>
+    <rect x="31" y="31" width="6" height="25" fill="#006064"/>
+    <text x="49" y="47" font-size="12" font-weight="900" fill="#455a64">LOAD POWER PARAMETERS</text>
+    <text x="49" y="65" font-size="10" font-weight="700" fill="#00897b">✓ Latest Power Master plan</text>
+    <rect x="291" y="32" width="73" height="32" rx="6" fill="#006064"/><text x="327.5" y="52" text-anchor="middle" font-size="10" font-weight="900" fill="#fff">USE PLAN</text>
+
+    <rect x="18" y="94" width="364" height="161" rx="13" fill="#fff"/>
+    <text x="32" y="119" font-size="11" font-weight="900" fill="#455a64">DEMAND AND PROFILE</text>
+    <text x="32" y="144" font-size="9" font-weight="800" fill="#1565c0">AEROBIC</text>
+    <rect x="32" y="151" width="96" height="43" rx="7" fill="#e3f2fd" stroke="#1e88e5" stroke-width="2"/><text x="44" y="179" font-size="18" font-weight="900" fill="#1565c0">184.0</text>
+    <text x="151" y="144" font-size="9" font-weight="800" fill="#f57f17">HARD EFFORT</text>
+    <rect x="151" y="151" width="96" height="43" rx="7" fill="#fff8e1" stroke="#ffb300" stroke-width="2"/><text x="163" y="179" font-size="18" font-weight="900" fill="#f57f17">24.5</text>
+    <text x="270" y="144" font-size="9" font-weight="800" fill="#c62828">SPRINT</text>
+    <rect x="270" y="151" width="96" height="43" rx="7" fill="#ffebee" stroke="#ef5350" stroke-width="2"/><text x="282" y="179" font-size="18" font-weight="900" fill="#c62828">4.2</text>
+    <rect x="32" y="213" width="334" height="7" rx="4" fill="#cfd8dc"/><rect x="32" y="213" width="258" height="7" rx="4" fill="#1e88e5"/><circle cx="290" cy="216.5" r="12" fill="#1e88e5" stroke="#fff" stroke-width="3"/>
+    <text x="32" y="241" font-size="10" font-weight="700" fill="#607d8b">Profile and fueling respond to the ride plan.</text>
+
+    <rect x="18" y="270" width="364" height="108" rx="13" fill="#e0f7fa"/>
+    <text x="32" y="294" font-size="10" font-weight="900" fill="#006064">RIDE PLAN</text>
+    <text x="32" y="322" font-size="11" fill="#455a64">Fuel target</text><text x="32" y="350" font-size="24" font-weight="900" fill="#006064">85 g/hr</text>
+    <text x="154" y="322" font-size="11" fill="#455a64">Ride total</text><text x="154" y="350" font-size="24" font-weight="900" fill="#006064">255 g</text>
+    <text x="272" y="322" font-size="11" fill="#455a64">Bottles</text><text x="272" y="350" font-size="20" font-weight="900" fill="#006064">2 × 90g</text>
+
+    <rect x="18" y="393" width="364" height="89" rx="13" fill="#fffde7" stroke="#fff59d"/>
+    <text x="32" y="417" font-size="10" font-weight="900" fill="#5d4037">RECIPE &amp; MIXING INSTRUCTIONS</text>
+    <g transform="translate(32 429)"><path d="M8 0h31v10H8zM4 10h39v35a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8V10Z" fill="#00acc1"/><text x="23.5" y="36" text-anchor="middle" font-size="10" font-weight="900" fill="#fff">90g</text></g>
+    <g transform="translate(84 429)"><path d="M8 0h31v10H8zM4 10h39v35a8 8 0 0 1-8 8H12a8 8 0 0 1-8-8V10Z" fill="#00acc1"/><text x="23.5" y="36" text-anchor="middle" font-size="10" font-weight="900" fill="#fff">90g</text></g>
+    <g transform="translate(140 431)"><path d="M6 0h28v9H6zM3 9h34v35a7 7 0 0 1-7 7H10a7 7 0 0 1-7-7V9Z" fill="#ad1457"/><text x="20" y="34" text-anchor="middle" font-size="9" font-weight="900" fill="#fff">75g</text></g>
+    <text x="203" y="443" font-size="12" font-weight="900" fill="#263238">Measured ingredients</text>
+    <text x="203" y="462" font-size="10" fill="#546e7a">Bottle ratio · gel stops</text>
+    <text x="203" y="476" font-size="10" fill="#546e7a">Water · spoon inventory</text>
+  </g>
+</svg>

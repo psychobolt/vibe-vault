@@ -146,12 +146,27 @@ function downloadJson(fileName, value) {
 const statusTimers = new WeakMap();
 
 function setStatus(element, message, kind = "info") {
+  if (!element.dataset.statusHoverBound) {
+    element.dataset.statusHoverBound = "true";
+    element.addEventListener("mouseenter", () => {
+      const timer = statusTimers.get(element);
+      if (timer) {
+        clearTimeout(timer);
+        statusTimers.delete(element);
+      }
+    });
+    element.addEventListener("mouseleave", () => {
+      if (!element.classList.contains("is-visible")) return;
+      const timer = setTimeout(() => element.classList.remove("is-visible"), 4000);
+      statusTimers.set(element, timer);
+    });
+  }
   const previousTimer = statusTimers.get(element);
   if (previousTimer) clearTimeout(previousTimer);
   element.textContent = message;
   element.dataset.kind = kind;
   element.classList.toggle("is-visible", Boolean(message));
-  if (message) {
+  if (message && !element.matches(":hover")) {
     const timer = setTimeout(() => element.classList.remove("is-visible"), kind === "error" ? 6500 : 4000);
     statusTimers.set(element, timer);
   }
@@ -764,6 +779,42 @@ function attachSectionLinks(root = global.document) {
       }
     });
   });
+
+  // On compact/mobile layouts the fixed tool rail competes with an expanded
+  // section for the same small top edge.  Keep the rail available by default,
+  // but hide it after the user explicitly expands a section; collapsing the
+  // section restores it.  A data flag avoids treating the initially-open
+  // details elements as an intentional expansion on page load.
+  const syncCompactSectionNav = () => {
+    const compact = global.matchMedia?.("(max-width: 820px)").matches;
+    const expanded = compact && Boolean(global.document.querySelector("details.collapsible-section[data-user-expanded=\"true\"]"));
+    global.document.body.classList.toggle("mobile-section-expanded", expanded);
+  };
+  // Sections are rendered by the planning UI after this helper runs, so bind
+  // once at the document/root level instead of attaching listeners only to
+  // the initial details nodes.  This keeps the behavior working after a
+  // re-render as well as on the first page load.
+  if (!global.document.__compactNavBound) {
+    global.document.__compactNavBound = true;
+    global.document.addEventListener("click", (event) => {
+      const summary = event.target.closest?.("details.collapsible-section > summary");
+      if (!summary || event.target.closest(".section-actions")) return;
+      const details = summary.parentElement;
+      global.requestAnimationFrame(() => {
+        details.dataset.userExpanded = String(details.open);
+        syncCompactSectionNav();
+      });
+    });
+    // `toggle` is the authoritative event for both pointer and keyboard
+    // disclosure changes. Capture it because toggle does not bubble, and keep
+    // the click listener above for browsers that do not emit it consistently.
+    global.document.addEventListener("toggle", (event) => {
+      const details = event.target;
+      if (!details?.matches?.("details.collapsible-section") || !details.dataset.userExpanded) return;
+      syncCompactSectionNav();
+    }, true);
+  }
+  syncCompactSectionNav();
 }
 
 function attachToolSidebar(currentTool) {
